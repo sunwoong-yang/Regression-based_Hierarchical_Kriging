@@ -59,7 +59,7 @@ class MFDNN(nn.Module):
 
         with torch.set_grad_enabled(fit):
             mlp_out = self.MLP_list[0](self.use_scaler(X, self.x_scaler[0]))
-            for sub_fidelity in range(1, pred_fidelity):
+            for sub_fidelity in range(1, pred_fidelity+1):
                 mlp_inp = torch.cat([
                     mlp_out, self.use_scaler(X, self.x_scaler[sub_fidelity])], dim=1)
                 mlp_out = self.MLP_list[sub_fidelity](mlp_inp)

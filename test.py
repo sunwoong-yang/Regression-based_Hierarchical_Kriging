@@ -35,8 +35,8 @@ class ToyProblem(torch.utils.data.Dataset):
 N_inp, N_out = 1, 2
 # header, dataloader = csv2Dat(N_inp=N_inp, dir="ToyProblem3.csv")
 inp_header, out_header, train_x, train_y = csv2Num(N_inp=N_inp, dir="ToyProblem3.csv")
-LF_inp_header, LF_out_header, LF_train_x, LF_train_y = csv2Num(N_inp=N_inp, dir="LF.csv")
-HF_inp_header, HF_out_header, HF_train_x, HF_train_y = csv2Num(N_inp=N_inp, dir="HF.csv")
+LF_inp_header, LF_out_header, LF_train_x, LF_train_y = csv2Num(N_inp=N_inp, dir="LF2.csv")
+HF_inp_header, HF_out_header, HF_train_x, HF_train_y = csv2Num(N_inp=N_inp, dir="HF2.csv")
 # header2, dataloader2 = csv2Dat(N_inp=1, dir="ToyProblem3.csv")
 
 
@@ -87,12 +87,17 @@ gprs.fit(train_x, train_y)
 
 mfdnn = MFDNN(input_dim=1, output_dim=1)
 criterion_ = nn.MSELoss()
-mfdnn.add_fidelity(hidden_layers=[20,20], activation="GELU", criterion=criterion_, lr=1e-3, epochs=2000)
-mfdnn.add_fidelity(hidden_layers=[10,10], activation="GELU", criterion=criterion_, lr=1e-3, epochs=2000)
-# mfdnn = mfdnn.to(device)
+mfdnn.add_fidelity(hidden_layers=[20,20], activation="GELU", criterion=criterion_, lr=1e-3, epochs=1000)
+mfdnn.add_fidelity(hidden_layers=[20,20,20], activation="GELU", criterion=criterion_, lr=1e-3, epochs=1000)
 
 mfdnn.fit(train_x=[LF_train_x, HF_train_x], train_y=[LF_train_y, HF_train_y])
 
+mlp_hf = MLP(1, [10, 10], "GELU", 1)
+mlp_hf = mlp_hf.to(device)
+criterion_ = nn.MSELoss()
+optimizer_ = optim.Adam(mlp_hf.parameters(), lr=1e-3)
+
+mlp_hf.fit(HF_train_x, HF_train_y, 1000, criterion_, optimizer_)
 
 # DE_SA = DM(DE)
 # MLP_SA = DM(mlp)
@@ -111,7 +116,7 @@ Y_mlp = mlp.predict(X_test)
 Y_gpr, STD_gpr = gprs.predict(X_test, True)
 Y_LF = mfdnn.predict(X_test, pred_fidelity=0)
 Y_HF = mfdnn.predict(X_test, pred_fidelity=1)
-
+Y_mlp_HF = mlp_hf.predict(X_test)
 
 plt.scatter(gprs.models[0].train_x, gprs.models[0].train_y, c='k', label=f'Train data {out_header[0]}')
 plt.plot(X_test, Y_gpr[:,0], c='r', label=f"GPR {out_header[0]}")
@@ -125,18 +130,22 @@ plt.show()
 
 plt.scatter(gprs.models[1].train_x, gprs.models[1].train_y, c='k', label=f'Train data {out_header[1]}')
 plt.plot(X_test, Y_gpr[:,1], c='r', label=f"GPR {out_header[1]}")
-plt.plot(X_test, Y_mlp[:,1], c='g', ls='-', label=f"MLP {out_header[1]}")
-plt.plot(X_test, Y_de[:,1], c='b', ls='--', label=f"DE {out_header[1]}")
+plt.plot(X_test, Y_mlp[:,1], c='g', label=f"MLP {out_header[1]}")
+plt.plot(X_test, Y_de[:,1], c='b', label=f"DE {out_header[1]}")
 plt.fill_between(X_test.flatten(), Y_gpr[:,1]-30*STD_gpr[:,1], Y_gpr[:,1]+30*STD_gpr[:,1], color='r', alpha=.5)
 plt.fill_between(X_test.flatten(), Y_de[:,1]-30*epis_std[:,1], Y_de[:,1]+30*epis_std[:,1], color='b', alpha=.5)
 plt.legend()
 plt.title("Y2")
 plt.show()
 
+def HF(x):
+    return (6 * x - 2) ** 2 * np.sin(12 * x - 4)
 plt.scatter(mfdnn.train_x[0],mfdnn.train_y[0], c='b', label='LF')
 plt.scatter(mfdnn.train_x[1],mfdnn.train_y[1], c='r', label='HF')
 plt.plot(X_test, Y_LF, c='b', label="LF pred")
 plt.plot(X_test, Y_HF, c='r', label="HF pred")
+plt.plot(X_test, Y_mlp_HF, c='g', ls='--', label="Only HF ped")
+plt.plot(X_test, HF(X_test), c='k', label="Ground truth")
 plt.legend()
 plt.show()
 
