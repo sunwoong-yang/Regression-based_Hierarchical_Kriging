@@ -87,8 +87,8 @@ gprs.fit(train_x, train_y)
 
 mfdnn = MFDNN(input_dim=1, output_dim=1)
 criterion_ = nn.MSELoss()
-mfdnn.add_fidelity(hidden_layers=[30,30,30], activation="GELU", criterion=criterion_, lr=1e-3, epochs=1000)
-mfdnn.add_fidelity(hidden_layers=[30,30,30], activation="GELU", criterion=criterion_, lr=1e-3, epochs=1000)
+mfdnn.add_fidelity(hidden_layers=[20,20], activation="GELU", criterion=criterion_, lr=1e-3, epochs=2000)
+mfdnn.add_fidelity(hidden_layers=[10,10], activation="GELU", criterion=criterion_, lr=1e-3, epochs=2000)
 # mfdnn = mfdnn.to(device)
 
 mfdnn.fit(train_x=[LF_train_x, HF_train_x], train_y=[LF_train_y, HF_train_y])

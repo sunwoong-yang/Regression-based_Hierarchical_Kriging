@@ -17,8 +17,9 @@ class MFDNN(nn.Module):
     def fit(self, train_x=[], train_y=[]):
         if (self.input_dim != len(train_x)) or (self.output_dim != len(train_y)):
             assert ('Mismatch between dim(inp/out) and len(X/Y)!')
-
-        self.train_x, self.train_y = Num2Ten(train_x), Num2Ten(train_y)
+        self.train_x = [Num2Ten(x) for x in train_x]
+        self.train_y = [Num2Ten(y) for y in train_y]
+        # self.train_x, self.train_y = Num2Ten(train_x), Num2Ten(train_y)
         self.x_scaler, self.y_scaler = self.get_scaler(train_x, train_y)
         optimizers = []
         for fidelity in range(self.N_fidelity):

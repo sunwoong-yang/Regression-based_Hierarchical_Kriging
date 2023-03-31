@@ -25,7 +25,7 @@ def Num2Dat(X, Y, mini_batch = None):
     return DataLoader(data, batch_size=mini_batch)
 
 def Num2Ten(x):
-    return torch.tensor(np.array(x), dtype=torch.float32)
+        return torch.tensor(np.array(x), dtype=torch.float32)
 
 def Ten2Dat(X, Y, mini_batch = None):
     data = TensorDataset(X,Y) # create your datset
