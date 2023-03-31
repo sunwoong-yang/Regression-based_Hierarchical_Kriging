@@ -25,7 +25,7 @@ def Num2Dat(X, Y, mini_batch = None):
     return DataLoader(data, batch_size=mini_batch)
 
 def Num2Ten(x):
-    return torch.tensor(x, dtype=torch.float32)
+    return torch.tensor(np.array(x), dtype=torch.float32)
 
 def Ten2Dat(X, Y, mini_batch = None):
     data = TensorDataset(X,Y) # create your datset
@@ -33,34 +33,40 @@ def Ten2Dat(X, Y, mini_batch = None):
         mini_batch = len(X)
     return DataLoader(data, batch_size=mini_batch)
 
+# def Ten2Num(x, detach=True):
+#     if detach:
+#         return x.detach().numpy()
+#     else:
+#         return x.numpy()
+
 def Ten2Num(x, detach=True):
-    if detach:
+    if x.requires_grad:
         return x.detach().numpy()
     else:
         return x.numpy()
+
 def NLLloss(y_real, y_pred, var):
     return (torch.log(var) + ((y_real - y_pred).pow(2))/var).mean()/2 + 0.5*np.log10(2*np.pi)
 
 def read_csv(N_inp, dir="DOEset1.csv"):
     data = pd.read_csv(dir)
     header = list(data.columns)
-    H = [header[:N_inp], header[N_inp:]]
     inp_dataset = data[header[:N_inp]].values
     out_dataset = data[header[N_inp:]].values
 
-    return H, inp_dataset, out_dataset
+    return header[:N_inp], header[N_inp:], inp_dataset, out_dataset
 
 def csv2Dat(N_inp, dir="DOEset1.csv", mini_batch = None):
-    H, X, Y = read_csv(N_inp, dir)
-    return H, Num2Dat(X, Y, mini_batch)
+    H_inp, H_out, X, Y = read_csv(N_inp, dir)
+    return H_inp, H_out, Num2Dat(X, Y, mini_batch)
 
 def csv2Ten(N_inp, dir="DOEset1.csv", mini_batch = None):
-    H, X, Y = read_csv(N_inp, dir)
-    return H, Num2Ten(X), Num2Ten(Y)
+    H_inp, H_out, X, Y = read_csv(N_inp, dir)
+    return H_inp, H_out, Num2Ten(X), Num2Ten(Y)
 
 def csv2Num(N_inp, dir="DOEset1.csv", mini_batch = None):
-    H, inp_dataset, out_dataset =  read_csv(N_inp, dir)
-    return H, inp_dataset, out_dataset
+    H_inp, H_out, inp_dataset, out_dataset =  read_csv(N_inp, dir)
+    return H_inp, H_out, inp_dataset, out_dataset
 
 def normalize(data):
     STD = Scaler()

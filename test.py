@@ -6,6 +6,7 @@ from surrogate_model.MLP import MLP
 from surrogate_model.DE import DeepEnsemble
 from surrogate_model.GPR import GPR
 from surrogate_model.GPRs import GPRs
+from surrogate_model.MFDNN import MFDNN
 from data_mining.DM import DM
 
 
@@ -33,7 +34,9 @@ class ToyProblem(torch.utils.data.Dataset):
 #     print(x.item(),y.item())
 N_inp, N_out = 1, 2
 # header, dataloader = csv2Dat(N_inp=N_inp, dir="ToyProblem3.csv")
-header, train_x, train_y = csv2Num(N_inp=N_inp, dir="ToyProblem3.csv")
+inp_header, out_header, train_x, train_y = csv2Num(N_inp=N_inp, dir="ToyProblem3.csv")
+LF_inp_header, LF_out_header, LF_train_x, LF_train_y = csv2Num(N_inp=N_inp, dir="LF.csv")
+HF_inp_header, HF_out_header, HF_train_x, HF_train_y = csv2Num(N_inp=N_inp, dir="HF.csv")
 # header2, dataloader2 = csv2Dat(N_inp=1, dir="ToyProblem3.csv")
 
 
@@ -54,7 +57,7 @@ header, train_x, train_y = csv2Num(N_inp=N_inp, dir="ToyProblem3.csv")
 
 
 
-mlp = MLP(N_inp, [30, 30, 30], N_out, nn.ReLU())
+mlp = MLP(N_inp, [30, 30, 30], "GELU", N_out)
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device = torch.device("cpu")
 mlp = mlp.to(device)
@@ -62,11 +65,10 @@ mlp = mlp.to(device)
 criterion_ = nn.MSELoss()
 optimizer_ = optim.Adam(mlp.parameters(), lr=1e-3)
 
-# mlp.fit(dataloader, 1000, criterion_, optimizer_)
 mlp.fit(train_x, train_y, 1000, criterion_, optimizer_)
 
 
-DE = DeepEnsemble(N_inp, [30, 30, 30], N_out, nn.ReLU(), num_models=5)
+DE = DeepEnsemble(N_inp, [30, 30, 30], "GELU", N_out, num_models=5)
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device = torch.device("cpu")
 DE = DE.to(device)
@@ -74,14 +76,23 @@ DE = DE.to(device)
 criterion_ = nn.MSELoss()
 optimizer_ = optim.Adam(DE.parameters(), lr=1e-3)
 
-DE.fit(train_x, train_y, 1000, optimizer_)
+DE.fit(train_x, train_y, 3000, optimizer_)
 
 
-# gpr = GPR()
-# gpr.fit(train_x, train_y)
+gpr = GPR()
+gpr.fit(train_x, train_y)
 
 gprs = GPRs()
 gprs.fit(train_x, train_y)
+
+mfdnn = MFDNN(input_dim=1, output_dim=1)
+criterion_ = nn.MSELoss()
+mfdnn.add_fidelity(hidden_layers=[30,30,30], activation="GELU", criterion=criterion_, lr=1e-3, epochs=1000)
+mfdnn.add_fidelity(hidden_layers=[30,30,30], activation="GELU", criterion=criterion_, lr=1e-3, epochs=1000)
+# mfdnn = mfdnn.to(device)
+
+mfdnn.fit(train_x=[LF_train_x, HF_train_x], train_y=[LF_train_y, HF_train_y])
+
 
 # DE_SA = DM(DE)
 # MLP_SA = DM(mlp)
@@ -97,24 +108,37 @@ X_test = np.linspace(0, 1, 100).reshape(-1, 1)
 
 Y_de, std, alea_std, epis_std = DE.predict(X_test, return_var=True)
 Y_mlp = mlp.predict(X_test)
-Y_s, STD_s = gprs.predict(X_test, True)
+Y_gpr, STD_gpr = gprs.predict(X_test, True)
+Y_LF = mfdnn.predict(X_test, pred_fidelity=0)
+Y_HF = mfdnn.predict(X_test, pred_fidelity=1)
 
-# Generating upper and lower bound of 68% confidence interval
 
-
-plt.scatter(gprs.models[0].train_x, gprs.models[0].train_y, c='r', label='G1')
-plt.plot(X_test, Y_s[:,0], c='r', label=f"{header[1][0]}")
-plt.fill_between(X_test.flatten(), Y_s[:,0]-30*STD_s[:,0], Y_s[:,0]+30*STD_s[:,0], color='r', alpha=.5)
+plt.scatter(gprs.models[0].train_x, gprs.models[0].train_y, c='k', label=f'Train data {out_header[0]}')
+plt.plot(X_test, Y_gpr[:,0], c='r', label=f"GPR {out_header[0]}")
+plt.plot(X_test, Y_mlp[:,0], c='g', ls='-', label=f"MLP {out_header[0]}")
+plt.plot(X_test, Y_de[:,0], c='b', ls='--', label=f"DE {out_header[0]}")
+plt.fill_between(X_test.flatten(), Y_gpr[:,0]-30*STD_gpr[:,0], Y_gpr[:,0]+30*STD_gpr[:,0], color='r', alpha=.5)
 plt.fill_between(X_test.flatten(), Y_de[:,0]-30*epis_std[:,0], Y_de[:,0]+30*epis_std[:,0], color='b', alpha=.5)
-plt.plot(X_test, Y_mlp[:,0], c='g', ls='-', label=f"MLP {header[1][0]}")
+plt.legend()
+plt.title("Y1")
+plt.show()
+
+plt.scatter(gprs.models[1].train_x, gprs.models[1].train_y, c='k', label=f'Train data {out_header[1]}')
+plt.plot(X_test, Y_gpr[:,1], c='r', label=f"GPR {out_header[1]}")
+plt.plot(X_test, Y_mlp[:,1], c='g', ls='-', label=f"MLP {out_header[1]}")
+plt.plot(X_test, Y_de[:,1], c='b', ls='--', label=f"DE {out_header[1]}")
+plt.fill_between(X_test.flatten(), Y_gpr[:,1]-30*STD_gpr[:,1], Y_gpr[:,1]+30*STD_gpr[:,1], color='r', alpha=.5)
+plt.fill_between(X_test.flatten(), Y_de[:,1]-30*epis_std[:,1], Y_de[:,1]+30*epis_std[:,1], color='b', alpha=.5)
+plt.legend()
+plt.title("Y2")
+plt.show()
+
+plt.scatter(mfdnn.train_x[0],mfdnn.train_y[0], c='b', label='LF')
+plt.scatter(mfdnn.train_x[1],mfdnn.train_y[1], c='r', label='HF')
+plt.plot(X_test, Y_LF, c='b', label="LF pred")
+plt.plot(X_test, Y_HF, c='r', label="HF pred")
 plt.legend()
 plt.show()
 
-plt.scatter(gprs.models[1].train_x, gprs.models[1].train_y, c='r', label='G2')
-plt.plot(X_test, Y_s[:,1], c='r', label=f"GPR {header[1][1]}")
-plt.fill_between(X_test.flatten(), Y_s[:,1]-30*STD_s[:,1], Y_s[:,1]+30*STD_s[:,1], color='r', alpha=.5)
-plt.plot(X_test, Y_de[:,1], c='g', ls='--', label=f"DE {header[1][1]}")
-plt.fill_between(X_test.flatten(), Y_de[:,1]-30*epis_std[:,1], Y_de[:,1]+30*epis_std[:,1], color='g', alpha=.5)
-plt.plot(X_test, Y_mlp[:,1], c='b', ls='-', label=f"MLP {header[1][0]}")
-plt.legend()
-plt.show()
+##
+

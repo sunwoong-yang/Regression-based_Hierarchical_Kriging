@@ -5,7 +5,7 @@ from surrogate_model.AUX_MLP import AUX_MLP
 from PrePost.PrePost import *
 
 class DeepEnsemble(nn.Module):
-    def __init__(self, input_dim, hidden_layers, output_dim, activation, num_models):
+    def __init__(self, input_dim, hidden_layers, activation, output_dim, num_models):
         super(DeepEnsemble, self).__init__()
         self.input_dim = input_dim
         self.output_dim = output_dim
@@ -16,7 +16,7 @@ class DeepEnsemble(nn.Module):
 
 
         for _ in range(num_models):
-            self.models.append(AUX_MLP(input_dim, hidden_layers, output_dim, activation))
+            self.models.append(AUX_MLP(input_dim, hidden_layers, activation, output_dim))
 
     def forward(self, x):
         # print(model(x))
@@ -47,13 +47,14 @@ class DeepEnsemble(nn.Module):
                 # print(f'Epoch {epoch+1} Loss: {loss.item()}')
 
     def predict(self, X, return_var=False):
-        scaled_X = Num2Ten(self.x_scaler.transform(X))
-        scaled_mean, scaled_var, scaled_alea_var, scaled_epis_var = self.forward(scaled_X)
-        scaled_mean, scaled_var, scaled_alea_var, scaled_epis_var = Ten2Num(scaled_mean), Ten2Num(scaled_var), Ten2Num(scaled_alea_var), Ten2Num(scaled_epis_var)
-        # X = Num2Ten(X)
-        # mean, var, alea_var, epis_var = self.forward(X)
-        if return_var:
-            return self.y_scaler.inverse_transform(scaled_mean), self.y_scaler.scale_ * scaled_var**0.5, self.y_scaler.scale_ * scaled_alea_var**0.5, self.y_scaler.scale_ * scaled_epis_var**0.5
-            # return tuple(y.detach().numpy() for y in self.forward(X))  # return mean, alea_var, epis_var, var
-        else:
-            return self.y_scaler.inverse_transform(scaled_mean)  # only prediction values
+        with torch.no_grad():
+            scaled_X = Num2Ten(self.x_scaler.transform(X))
+            scaled_mean, scaled_var, scaled_alea_var, scaled_epis_var = self.forward(scaled_X)
+            scaled_mean, scaled_var, scaled_alea_var, scaled_epis_var = Ten2Num(scaled_mean), Ten2Num(scaled_var), Ten2Num(scaled_alea_var), Ten2Num(scaled_epis_var)
+            # X = Num2Ten(X)
+            # mean, var, alea_var, epis_var = self.forward(X)
+            if return_var:
+                return self.y_scaler.inverse_transform(scaled_mean), self.y_scaler.scale_ * scaled_var**0.5, self.y_scaler.scale_ * scaled_alea_var**0.5, self.y_scaler.scale_ * scaled_epis_var**0.5
+                # return tuple(y.detach().numpy() for y in self.forward(X))  # return mean, alea_var, epis_var, var
+            else:
+                return self.y_scaler.inverse_transform(scaled_mean)  # only prediction values

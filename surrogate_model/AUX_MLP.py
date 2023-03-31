@@ -2,8 +2,8 @@ import torch.nn as nn
 from surrogate_model.MLP import MLP
 
 class AUX_MLP(MLP):
-    def __init__(self, input_dim, hidden_layers, output_dim, activation):
-        super(AUX_MLP, self).__init__(input_dim, hidden_layers, output_dim, activation)  # Same as super().__init__(input_dim, hidden_layers, output_dim, activation)
+    def __init__(self, input_dim, hidden_layers, activation, output_dim):
+        super(AUX_MLP, self).__init__(input_dim, hidden_layers, activation, output_dim)  # Same as super().__init__(input_dim, hidden_layers, output_dim, activation)
 
         self.final_layer = nn.Linear(hidden_layers[-1], 2 * output_dim)
 
