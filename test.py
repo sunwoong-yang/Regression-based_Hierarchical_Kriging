@@ -55,7 +55,7 @@ HF_inp_header, HF_out_header, HF_train_x, HF_train_y = csv2Num(N_inp=N_inp, dir=
 
 
 
-mlp = MLP(N_inp, [30, 30, 30], "GELU", N_out)
+mlp = MLP(N_inp, [5, 5, 5], "GELU", N_out)
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device = torch.device("cpu")
 mlp = mlp.to(device)
@@ -66,7 +66,7 @@ optimizer_ = optim.Adam(mlp.parameters(), lr=1e-3)
 mlp.fit(train_x, train_y, 1000, criterion_, optimizer_)
 
 
-DE = DeepEnsemble(N_inp, [30, 30, 30], "GELU", N_out, num_models=5)
+DE = DeepEnsemble(N_inp, [5, 5, 5], "GELU", N_out, num_models=5)
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device = torch.device("cpu")
 DE = DE.to(device)
@@ -76,7 +76,6 @@ optimizer_ = optim.Adam(DE.parameters(), lr=1e-3)
 
 DE.fit(train_x, train_y, 3000, optimizer_)
 
-
 gpr = GPR()
 gpr.fit(train_x, train_y)
 
@@ -85,8 +84,8 @@ gprs.fit(train_x, train_y)
 
 mfdnn = MFDNN(input_dim=1, output_dim=1)
 criterion_ = nn.MSELoss()
-mfdnn.add_fidelity(hidden_layers=[20,20], activation="Tanh", criterion=criterion_, lr=1e-3, epochs=1000)
-mfdnn.add_fidelity(hidden_layers=[10,10], activation="Tanh", criterion=criterion_, lr=1e-3, epochs=1000)
+mfdnn.add_fidelity(hidden_layers=[20, 20], activation="Tanh", criterion=criterion_, lr=1e-3, epochs=1000)
+mfdnn.add_fidelity(hidden_layers=[10, 10], activation="Tanh", criterion=criterion_, lr=1e-3, epochs=1000)
 
 mfdnn.fit(train_x=[LF_train_x, HF_train_x], train_y=[LF_train_y, HF_train_y])
 
@@ -135,6 +134,7 @@ plt.show()
 # plt.legend()
 # plt.title("Y2")
 # plt.show()
+# function to sum to numbers
 
 def HF(x):
     return (6 * x - 2) ** 2 * np.sin(12 * x - 4)
@@ -147,5 +147,4 @@ plt.plot(X_test, HF(X_test), c='k', label="Ground truth")
 plt.legend()
 plt.show()
 
-##
 
