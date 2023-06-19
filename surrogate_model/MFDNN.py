@@ -39,14 +39,13 @@ class MFDNN(nn.Module):
             else:
                 for epoch in range(epochs):
                     #이 아래를 통째로 prediction으로 치환못하려나
-                    mlp_out = self.MLP_list[0](self.use_scaler(self.train_x[fidelity], self.x_scaler[0]))
-                    for sub_fidelity in range(1, fidelity+1):
-                        mlp_inp = torch.cat([
-                            mlp_out, self.use_scaler(self.train_x[fidelity], self.x_scaler[sub_fidelity])
-                        ], dim=1)
-                        mlp_out = self.MLP_list[sub_fidelity](mlp_inp)
-                    # mlp_out = self.predict(self.train_x[fidelity], fit=True)
-
+                    # mlp_out = self.MLP_list[0](self.use_scaler(self.train_x[fidelity], self.x_scaler[0]))
+                    # for sub_fidelity in range(1, fidelity+1):
+                    #     mlp_inp = torch.cat([
+                    #         mlp_out, self.use_scaler(self.train_x[fidelity], self.x_scaler[sub_fidelity])
+                    #     ], dim=1)
+                    #     mlp_out = self.MLP_list[sub_fidelity](mlp_inp)
+                    mlp_out = self.predict(self.train_x[fidelity], pred_fidelity=fidelity, fit=True)
 
                     loss = criterion(self.use_scaler(self.train_y[fidelity], self.y_scaler[fidelity]), mlp_out)
                     loss.backward()
