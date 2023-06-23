@@ -28,7 +28,7 @@ HF_x = lhs(in_dim, samples=14, criterion='maximin')
 LF_y = LF_function(LF_x)
 HF_y = HF_function(HF_x)
 
-hk = HK(x=[LF_x, HF_x], y=[LF_y.reshape(-1), HF_y.reshape(-1)], n_pop=[100,100], n_gen=[100,100], HKtype="r")
+hk = HK(x=[LF_x, HF_x], y=[LF_y, HF_y], n_pop=[100,100], n_gen=[100,100], HKtype="r")
 hk.fit()
 
 criterion_ = nn.MSELoss()
@@ -47,7 +47,7 @@ test_x = np.linspace(0, 1, 101).reshape(-1, 1)
 pred_LF_y = mfdnn.predict(test_x, pred_fidelity=0)
 pred_HF_y = mfdnn.predict(test_x, pred_fidelity=1)
 
-pred_HF_y_HK = hk.predict(test_x, pred_fidelity=1, UQ=False)
+pred_HF_y_HK = hk.predict(test_x, pred_fidelity=1, return_std=False)
 
 fig, ax = plt.subplots(dpi=300)
 ax.plot(test_x, HF_function(test_x), c='k', ls='--', label="Ground truth")

@@ -15,6 +15,9 @@ class HK:
 	def __init__(self, x, y, n_pop=None, n_gen=None, HKtype="r"):
 		self.t_start = time.time()
 		self.x, self.y = x, y
+		self.y = [y.reshape(-1) for y in self.y]
+		# for each_y in self.y:
+		# 	each_y.reshape(-1)
 		if n_pop is None:
 			n_pop = [100] * len(x)
 		if n_gen is None:
@@ -82,7 +85,7 @@ class HK:
 		self.total_F.append(F)
 
 	###################################
-	def predict(self, x_test, pred_fidelity=None, surro_dir=None, UQ=True):  # $%^&
+	def predict(self, X, pred_fidelity=None, surro_dir=None, return_std=True):  # $%^&
 		# HF들의 y와 MSE 계산에는 r_vector와 y_pred의 계산만 새로 필요. 나머지는 새로 계산할 필요 없음
 
 		if pred_fidelity is None:
@@ -101,7 +104,7 @@ class HK:
 			temp_X = self.total_opt_theta[pred_fidelity]
 			temp_X = np.append(temp_X, self.total_opt_nugget[pred_fidelity])
 
-		r_vector = cal_r_vector(self.x[pred_fidelity], x_test, temp_X, self.HKtype)
+		r_vector = cal_r_vector(self.x[pred_fidelity], X, temp_X, self.HKtype)
 		F = self.total_F[pred_fidelity]  #### self.total_F >>> total_F
 		beta = self.total_beta[pred_fidelity]
 		sigmaSQ = self.total_sigmaSQ[pred_fidelity]
@@ -112,18 +115,18 @@ class HK:
 				y_pred = beta + r_vector.transpose() @ invR @ (self.y[pred_fidelity] - F * beta)
 				MSE = []
 
-				for i in range(x_test.shape[0]):
+				for i in range(X.shape[0]):
 					MSE.append(sigmaSQ * (1 - r_vector.transpose()[i] @ invR @ r_vector[:, i] + (
 							1 - F.transpose() @ invR @ r_vector[:, i]) ** 2 / (F.transpose() @ invR @ F)))
 
 			else:
-				y_lf = self.predict(x_test, pred_fidelity - 1)[0]
+				y_lf = self.predict(X, pred_fidelity - 1)[0]
 				y_pred = beta * y_lf + r_vector.transpose() @ invR @ (self.y[pred_fidelity] - F * beta)
 
 				temp_1 = 1 / (F.transpose() @ invR @ F)
 				MSE = []
 
-				for i in range(x_test.shape[0]):
+				for i in range(X.shape[0]):
 					temp_2 = r_vector.transpose()[i] @ invR @ r_vector[:, i]
 					temp_3 = r_vector.transpose()[i] @ invR @ F
 
@@ -134,14 +137,14 @@ class HK:
 			regression_invR = np.linalg.inv(
 				R - self.total_opt_nugget[pred_fidelity] * np.identity(N_pts_test) + 10 ** -9 * np.identity(N_pts_test))
 			regression_sigmaSQ = cal_regression_sigmaSQ(N_pts_test, self.y[pred_fidelity], F, beta, R, invR,
-			                                                 self.total_opt_nugget[pred_fidelity])
+			                                            self.total_opt_nugget[pred_fidelity])
 
 			if pred_fidelity == 0:
 
 				y_pred = beta + r_vector.transpose() @ invR @ (self.y[pred_fidelity] - F * beta)
 				MSE = []
 
-				for i in range(x_test.shape[0]):
+				for i in range(X.shape[0]):
 					MSE.append(regression_sigmaSQ * (1 - r_vector.transpose()[i] @ regression_invR @ r_vector[:, i] + (
 							1 - F.transpose() @ regression_invR @ r_vector[:, i]) ** 2 / (
 							                                 F.transpose() @ regression_invR @ F)))
@@ -149,13 +152,13 @@ class HK:
 
 			else:
 
-				y_lf = self.predict(x_test, pred_fidelity - 1)[0]
+				y_lf = self.predict(X, pred_fidelity - 1)[0]
 				y_pred = beta * y_lf + r_vector.transpose() @ invR @ (self.y[pred_fidelity] - F * beta)
 
 				temp_1 = 1 / (F.transpose() @ regression_invR @ F)
 				MSE = []
 
-				for i in range(x_test.shape[0]):
+				for i in range(X.shape[0]):
 					temp_2 = r_vector.transpose()[i] @ regression_invR @ r_vector[:, i]
 					temp_3 = r_vector.transpose()[i] @ regression_invR @ F
 
@@ -164,7 +167,7 @@ class HK:
 		MSE = np.array(MSE)
 		MSE[MSE < 0] = 0
 
-		if UQ:
+		if return_std:
 			return y_pred, np.sqrt(MSE)
 		else:
 			return y_pred
