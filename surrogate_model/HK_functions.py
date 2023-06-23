@@ -27,10 +27,10 @@ class HKVariable:
         return
 
 def cal_r(x1, x2, X, HKtype):
-    if HKtype == "Interpolation":
+    if HKtype == ("i" or "I"):
         theta = X
 
-    elif HKtype == "Regression":
+    elif HKtype == ("r" or "R"):
         theta = X[:-1]
 
     eps = theta * np.abs(x1 - x2)
@@ -61,9 +61,9 @@ def cal_R(x, y, X, HKtype):  # x : (N_pts,N_dv)의 shape을 가지는 dv값 arra
         for j in range(i + 1, N_pts):
             R[i, j] = cal_r(x[i], x[j], X, HKtype)
 
-    if HKtype == "Interpolation":
+    if HKtype == ("i" or "I"):
         nugget = 10 ** -12
-    elif HKtype == "Regression":
+    elif HKtype == ("r" or "R"):
         nugget = X[-1]
 
     return R + R.transpose() + (1 + nugget) * np.identity(N_pts)

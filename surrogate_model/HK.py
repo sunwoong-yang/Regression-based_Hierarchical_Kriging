@@ -1,120 +1,111 @@
 from surrogate_model.HK_functions import *
 
 from pymoo.algorithms.soo.nonconvex.ga import GA
-from pymoo.util.termination.x_tol import DesignSpaceToleranceTermination
 from pymoo.optimize import minimize
+from pymoo.termination.xtol import DesignSpaceTermination
 from pymoo.factory import get_sampling, get_crossover, get_mutation
+from pymoo.operators.mutation.pm import PM
 from pymoo.core.problem import ElementwiseProblem
-import pickle
+import time
 
 
 class HK:
-	def __init__(self, XList, YList, qDataFusion):
-		self.__XList = XList
-		self.__YList = YList
-		self.__qDataFusion = qDataFusion
 
-		self.__nLevel = len(XList)
+	###################################
+	def __init__(self, x, y, n_pop=100, n_gen=100, HKtype="r"):
+		self.t_start = time.time()
+		self.x, self.y = x, y
+		self.pop, self.gen = np.array(n_pop), np.array(n_gen)
+		self.total_level = len(x)
+		self.current_level = 0
+		self.HKtype = HKtype  # Regression: "r" & Interpolation: "i"
+		self.total_opt_theta, self.total_R, self.total_invR, self.total_F, self.total_beta, self.total_sigmaSQ, self.total_MLE = [], [], [], [], [], [], []
+		if self.HKtype == ("i" or "I"):
+			pass
+		elif self.HKtype == ("r" or "R"):
+			self.total_opt_nugget, self.total_opt_order = [], []
+		else:
+			print("Invalid HK type")
 
-		# HK Variables
-		self.__total_opt_theta = []
-		self.__total_opt_nugget = []
-		self.__total_F = []
-		self.__total_R = []
-		self.__total_invR = []
-		self.__total_beta = []
-		self.__total_sigmaSQ = []
-		self.__total_MLE = []
+	###################################
+	def fit(self, history=False, to_level=None):
+		if to_level is None:  # to_level 입력안되면 모든 fidelity 학습
+			to_level = self.total_level - 1
 
-		# self.__fdir = fdir
-		# self.__fpath_hkVaraible = os.path.join(fdir, "HKVariable.hk")
+		while self.current_level < to_level + 1:
+			if history:
+				print("#########  Level %d starts  #########" % (self.current_level))
+			t_temp = time.time()
+			x, y = self.x[self.current_level], self.y[self.current_level]
 
-		# Model Parameter
-		self.__hkVariableList = []
+			self.opt_bef_action()
+			self.GA_results = self.GA_krig(self.current_level)
+			self.opt_X = self.GA_results[0]
+			self.opt_aft_action(x, y, self.opt_X)
 
-		return
+			result = []
+			result.append(self.total_F)
+			result.append(self.opt_X)
 
-	def regression(self):
-		nobj = len(self.__YList[0][0])
-		for iobj in range(0, nobj, 1):
-			print(f"{iobj + 1}th Y Start")
-			# Initialize variables for every Y
-			self.__total_opt_theta = []
-			self.__total_opt_nugget = []
-			self.__total_F = []
-			self.__total_R = []
-			self.__total_invR = []
-			self.__total_beta = []
-			self.__total_sigmaSQ = []
-			self.__total_MLE = []
+			announce = "   Final generation = %s" % (self.GA_results[2])
+			announce += "\n   Optimal theta = %s" % (self.total_opt_theta[self.current_level])
+			if self.HKtype == ("r" or "R"):
+				announce += "\n   Optimal nugget = %E" % (self.total_opt_nugget[self.current_level])
+			announce += "\n   Optimal likelihood = %f" % (self.total_MLE[self.current_level])
+			announce += "\n   Optimal R's condition number = %f" % (np.linalg.cond(self.total_R[self.current_level]))
+			announce += "\n   Level %d finishes with time %f[s]" % (self.current_level, time.time() - t_temp)
 
-			for i in range(0, self.__nLevel, 1):
-				x = self.__XList[i]
-				y = self.__YList[i][:, iobj]
+			if history:
+				print(announce)
 
-				print(f"   Level{i} Start")
-				self.__opt_bef_action(i, x, iobj)
+			self.current_level += 1
 
-				#                 print(f"Finish opt_bef_action")
-				GA_results = self.__GA_krig(i, x, y)
+		if history:
+			print("#########  HK total training time = %f[s]  #########\n" % (time.time() - self.t_start))
 
-				#                 print(f"Finish GA_krig")
-				opt_X = GA_results[0]
-				self.__opt_aft_action(i, opt_X, x, y)
-			#                 print(f"Finish opt_aft_action")
+		return result, self.total_opt_theta  # $%^&
 
-			args = [self.__total_opt_theta, self.__total_opt_nugget, self.__total_F, self.__total_R,
-			        self.__total_invR, self.__total_beta, self.__total_sigmaSQ, self.__total_MLE]
+	###################################
+	def opt_bef_action(self):  # x,y,current_level,*args):
 
-			# Set Parameter
-			hkVariable = HKVariable()
-			hkVariable.setParameter(args)
+		self.N_pts = self.x[self.current_level].shape[0]
 
-			self.__hkVariableList.append(hkVariable)
+		if self.current_level == 0:
+			F = np.ones(self.N_pts)
+		else:  # if current_level != 0 --> F = estimate으로넣기
+			F = self.predict(self.x[self.current_level], self.current_level - 1)[0]
 
-		return
+		self.total_F.append(F)
 
-	def saveParameter(self, fdir):
-		for i in range(0, len(self.__hkVariableList), 1):
-			f = open(os.path.join(fdir, f"HKVariable{i + 1}.hk"), "wb")
-			pickle.dump(self.__hkVariableList[i], f)
-			f.close()
+	###################################
+	def predict(self, x_test, pred_fidelity=None, surro_dir=None):  # $%^&
+		# HF들의 y와 MSE 계산에는 r_vector와 y_pred의 계산만 새로 필요. 나머지는 새로 계산할 필요 없음
 
-		return
+		if pred_fidelity is None:
+			pred_fidelity = self.total_level - 1
 
-	def loadParameter(self, fdir, iobj):
-		f = open(os.path.join(fdir, f"HKVariable{iobj + 1}.hk"), "rb")
-		hkVariable = pickle.load(f)
-		f.close()
+		if surro_dir is not None:  # $%^&
+			self.total_opt_theta = surro_dir  # $%^&
 
-		self.__total_opt_theta, self.__total_opt_nugget, self.__total_F, self.__total_R, \
-			self.__total_invR, self.__total_beta, self.__total_sigmaSQ, self.__total_MLE = hkVariable.getParameter()
+		N_pts_test = self.x[pred_fidelity].shape[0]
+		R = self.total_R[pred_fidelity]
+		invR = self.total_invR[pred_fidelity]
 
-		return
+		if self.HKtype == ("i" or "I"):
+			temp_X = self.total_opt_theta[pred_fidelity]
+		elif self.HKtype == ("r" or "R"):
+			temp_X = self.total_opt_theta[pred_fidelity]
+			temp_X = np.append(temp_X, self.total_opt_nugget[pred_fidelity])
 
-	def prediction(self, x_test, test_level, iobj):
+		r_vector = self.cal_r_vector(x_test, temp_X, pred_fidelity)
+		F = self.total_F[pred_fidelity]  #### self.total_F >>> total_F
+		beta = self.total_beta[pred_fidelity]
+		sigmaSQ = self.total_sigmaSQ[pred_fidelity]
 
-		#         HKtype = self.__qDataFusion["HKtype"]
+		if self.HKtype == ("i" or "I"):
+			if pred_fidelity == 0:
 
-		HKtype = "Regression"
-		N_pts_test = self.__XList[test_level].shape[0]
-		R = self.__total_R[test_level]
-		invR = self.__total_invR[test_level]
-
-		if HKtype == "Interpolation":
-			temp_X = self.__total_opt_theta[test_level]
-		else:  # HKtype == "Regression":
-			temp_X = self.__total_opt_theta[test_level]
-			temp_X = np.append(temp_X, self.__total_opt_nugget[test_level])
-
-		r_vector = cal_r_vector(self.__XList[test_level], x_test, temp_X, HKtype)
-		F = self.__total_F[test_level]
-		beta = self.__total_beta[test_level]
-		sigmaSQ = self.__total_sigmaSQ[test_level]
-
-		if HKtype == "Interpolation":
-			if test_level == 0:
-				y_pred = beta + r_vector.transpose() @ invR @ (self.__YList[test_level][:, iobj] - F * beta)
+				y_pred = beta + r_vector.transpose() @ invR @ (self.y[pred_fidelity] - F * beta)
 				MSE = []
 
 				for i in range(x_test.shape[0]):
@@ -122,8 +113,8 @@ class HK:
 							1 - F.transpose() @ invR @ r_vector[:, i]) ** 2 / (F.transpose() @ invR @ F)))
 
 			else:
-				y_lf = self.prediction(x_test, test_level - 1, iobj)[0]
-				y_pred = beta * y_lf + r_vector.transpose() @ invR @ (self.__YList[test_level][:, iobj] - F * beta)
+				y_lf = self.predict(x_test, pred_fidelity - 1)[0]
+				y_pred = beta * y_lf + r_vector.transpose() @ invR @ (self.y[pred_fidelity] - F * beta)
 
 				temp_1 = 1 / (F.transpose() @ invR @ F)
 				MSE = []
@@ -134,27 +125,28 @@ class HK:
 
 					MSE.append((sigmaSQ * (1 - temp_2 + (temp_3 - y_lf[i]) * (temp_1) * (temp_3 - y_lf[i]))))
 
-		else:  # HKtype == "Regression"
+		if self.HKtype == ("r" or "R"):
 			# nugget 그냥 빼버리면 inv 계산에서 또 수치에러 발생. 이를 완화위해 trick으로 10**-9 fixed nugget 사용
 			regression_invR = np.linalg.inv(
-				R - self.__total_opt_nugget[test_level] * np.identity(N_pts_test) + 10 ** -9 * np.identity(
-					N_pts_test))
-			regression_sigmaSQ = cal_regression_sigmaSQ(N_pts_test, self.__YList[test_level][:, iobj], F, beta, R,
-			                                            invR, self.__total_opt_nugget[test_level])
+				R - self.total_opt_nugget[pred_fidelity] * np.identity(N_pts_test) + 10 ** -9 * np.identity(N_pts_test))
+			regression_sigmaSQ = cal_regression_sigmaSQ(N_pts_test, self.y[pred_fidelity], F, beta, R, invR,
+			                                                 self.total_opt_nugget[pred_fidelity])
 
-			if test_level == 0:
-				y_pred = beta + r_vector.transpose() @ invR @ (self.__YList[test_level][:, iobj] - F * beta)
+			if pred_fidelity == 0:
+
+				y_pred = beta + r_vector.transpose() @ invR @ (self.y[pred_fidelity] - F * beta)
 				MSE = []
 
 				for i in range(x_test.shape[0]):
-					MSE.append(regression_sigmaSQ * (
-							1 - r_vector.transpose()[i] @ regression_invR @ r_vector[:, i] + (
+					MSE.append(regression_sigmaSQ * (1 - r_vector.transpose()[i] @ regression_invR @ r_vector[:, i] + (
 							1 - F.transpose() @ regression_invR @ r_vector[:, i]) ** 2 / (
-									F.transpose() @ regression_invR @ F)))
+							                                 F.transpose() @ regression_invR @ F)))
+
 
 			else:
-				y_lf = self.prediction(x_test, test_level - 1, iobj)[0]
-				y_pred = beta * y_lf + r_vector.transpose() @ invR @ (self.__YList[test_level][:, iobj] - F * beta)
+
+				y_lf = self.predict(x_test, pred_fidelity - 1)[0]
+				y_pred = beta * y_lf + r_vector.transpose() @ invR @ (self.y[pred_fidelity] - F * beta)
 
 				temp_1 = 1 / (F.transpose() @ regression_invR @ F)
 				MSE = []
@@ -163,473 +155,456 @@ class HK:
 					temp_2 = r_vector.transpose()[i] @ regression_invR @ r_vector[:, i]
 					temp_3 = r_vector.transpose()[i] @ regression_invR @ F
 
-					MSE.append((regression_sigmaSQ * (
-							1 - temp_2 + (temp_3 - y_lf[i]) * (temp_1) * (temp_3 - y_lf[i]))))
+					MSE.append((regression_sigmaSQ * (1 - temp_2 + (temp_3 - y_lf[i]) * (temp_1) * (temp_3 - y_lf[i]))))
 
 		MSE = np.array(MSE)
 		MSE[MSE < 0] = 0
-
 		return y_pred, np.sqrt(MSE)
 
-	def __opt_aft_action(self, iLevel, opt_X, x, y):
-		#         HKType = self.__qDataFusion["HKType"]
-		HKType = "Regression"
+	###################################
+	def opt_aft_action(self, x, y, opt_X):
 
-		N_pts = x[iLevel].shape[0]
-		R = cal_R(x, y, opt_X, HKType)
+		N_pts = self.x[self.current_level].shape[0]
+		R = self.cal_R(x, y, opt_X)
 		invR = np.linalg.inv(R)
 
-		F = self.__total_F[iLevel]
+		F = self.total_F[self.current_level]
+
 		transF = F.transpose()
+		beta = self.cal_beta(self.y[self.current_level], F, invR, transF)
+		sigmaSQ = self.cal_sigmaSQ(N_pts, self.y[self.current_level], F, beta, invR)
+		MLE = self.cal_MLE(N_pts, sigmaSQ, R)
 
-		beta = cal_beta(y, F, invR, transF)
-		sigmaSQ = cal_sigmaSQ(N_pts, y, F, beta, invR)
-		MLE = cal_MLE(N_pts, sigmaSQ, R)
-
-		if HKType == "Interpolation":
+		if self.HKtype == ("i" or "I"):
 			opt_theta = opt_X
 
-		else:  # self.q["HKtype"] == "Regression":
+		if self.HKtype == ("r" or "R"):
 			opt_theta = opt_X[:-1]
 			opt_nugget = opt_X[-1]
-			self.__total_opt_nugget.append(opt_nugget)
+			self.total_opt_nugget.append(opt_nugget)
 
-		self.__total_opt_theta.append(opt_theta)
-		self.__total_R.append(R)
-		self.__total_invR.append(invR)
-		self.__total_beta.append(beta)
-		self.__total_sigmaSQ.append(sigmaSQ)
-		self.__total_MLE.append(MLE)
+		self.total_opt_theta.append(opt_theta)
+		self.total_R.append(R)
+		self.total_invR.append(invR)
+		self.total_beta.append(beta)
+		self.total_sigmaSQ.append(sigmaSQ)
+		self.total_MLE.append(MLE)
 
-		return
+	###################################
 
-	def __opt_bef_action(self, iLevel, x, iobj):
+	###################################
+	# def plot_var(self, x_test, level, function=None):
+	# 	plt.style.use('seaborn-ticks')
+	#
+	# 	total_level = len(self.x)
+	# 	y_HK = self.prediction(x_test, level)
+	# 	col = ['b', 'r', 'g']
+	# 	for i in range(level + 1):
+	# 		# plt.scatter(x[i],y[i],marker = 'o',color='red')
+	# 		label_ = "Fidelity-level %d data" % i
+	# 		plt.scatter(self.x[i], self.y[i], label=label_, color=col[i])
+	# 	if function:
+	# 		plt.plot(x_test, function(x_test), 'r-', label="True function")
+	# 	if self.HKtype == ("r" or "R") and level > 0:
+	# 		plt.plot(x_test, y_HK[0], 'k-', label="Regression-based HK")
+	# 	elif self.HKtype == ("i" or "I") and level > 0:
+	# 		plt.plot(x_test, y_HK[0], 'k-', label="Interpolation-based HK")
+	# 	if self.HKtype == ("r" or "R") and level == 0:
+	# 		plt.plot(x_test, y_HK[0], 'k-', label="Regression-based Kriging")
+	# 	elif self.HKtype == ("i" or "I") and level == 0:
+	# 		plt.plot(x_test, y_HK[0], 'k-', label="Interpolation-based Kriging")
+	# 	# plt.fill_between(x_test, y_HK[0]-2*y_HK[1], y_HK[0]+2*y_HK[1],
+	# 	#               facecolor="red", # The fill color
+	# 	#               edgecolor='black',       # The outline color
+	# 	#               alpha=0.3,
+	# 	#               linestyle='--')          # Transparency of the fill
+	#
+	# 	plt.legend()
+	# 	plt.show()
+	#
+	# ###################################
+	# def accuracy_plot(self, x_real, y_real, level):
+	# 	y_pred = self.prediction(x_real, level)[0]
+	# 	limit = np.array([np.min([y_pred, y_real]), np.max([y_pred, y_real])])
+	# 	plt.plot(limit, limit, c='k')
+	# 	plt.xlabel("Real value", fontsize=15)
+	# 	plt.ylabel("Predicted value", fontsize=15)
+	# 	plt.scatter(y_real, y_pred, color='k')
+	# 	plt.legend(fontsize=15)
+	# 	plt.show()
+	# 	r_squared = self.Rsq(x_real, y_real, level)
+	# 	print(f"R_sq: {r_squared:.4f}")
 
-		if iLevel == 0:
-			N_pts = x.shape[0]
-			F = np.ones(N_pts)
-		else:  # if current_level != 0 --> F = estimate으로넣기
-			F = self.prediction(x, iLevel - 1, iobj)[0]
+	###################################
+	def pred_arbit_theta(self, x_test, current_level, theta, nugget):
 
-		self.__total_F.append(F)
+		N_pts = self.x[current_level].shape[0]
+		R = cal_R(self.x[current_level], theta[current_level], nugget)
+		print("cond", current_level, np.linalg.cond(R))
+		invR = np.linalg.inv(R)
+		r_vector = cal_r_vector(x_test, self.x[current_level], theta[current_level])
+		F = self.total_F[current_level]
+		transF = F.transpose()
+		beta = cal_beta(self.y[current_level], F, invR, transF)
+		sigmaSQ = cal_sigmaSQ(N_pts, self.y[current_level], F, beta, invR)
+		MLE = cal_MLE(N_pts, sigmaSQ, R)
 
-		return
+		if current_level == 0:
 
-	def __GA_krig(self, iLevel, x, y):
-		qLevel = self.__qDataFusion[f"Level{iLevel + 1}"]
-		n_var = x.shape[1]
-		pop_size = qLevel["npop"]
-		gen_size = qLevel["nga"]
+			y = beta + r_vector.transpose() @ invR @ (self.y[current_level] - F * beta)
+			MSE = []
 
-		#         HKtype = self.__qDataFusion["HKType"]
-		HKtype = "Regression"
-		total_F = self.__total_F
+			for i in range(x_test.shape[0]):
+				MSE.append(sigmaSQ * (1 - r_vector.transpose()[i] @ invR @ r_vector[:, i] + (
+						1 - F.transpose() @ invR @ r_vector[:, i]) ** 2 / (F.transpose() @ invR @ F)))
+
+			MSE = np.array(MSE)
+			MSE[MSE < 0] = 0
+			return y, np.sqrt((MSE)), MLE
+
+		else:
+			y_lf = pred_arbit_theta(x_test, current_level - 1, theta, nugget)[0]
+			y = beta * y_lf + r_vector.transpose() @ invR @ (self.y[current_level] - F * beta)
+			temp_1 = 1 / (F.transpose() @ invR @ F)
+			MSE = []
+			for i in range(x_test.shape[0]):
+				temp_2 = r_vector.transpose()[i] @ invR @ r_vector[:, i]
+				temp_3 = r_vector.transpose()[i] @ invR @ F
+				MSE.append((sigmaSQ * (1 - temp_2 + (temp_3 - y_lf[i]) * (temp_1) * (temp_3 - y_lf[i]))))
+
+			MSE = np.array(MSE)
+			MSE[MSE < 0] = 0
+			return y, np.sqrt((MSE)), MLE
+
+	###################################
+	def GA_krig(self, current_level):
+		n_var = self.x[current_level].shape[1]
+		pop_size = self.pop[current_level]
+		gen_size = self.gen[current_level]
+		fixed_gen = 0  # 1이면 무조건 해당 gen_size만큼 GA
+		# if fixed_gen == 1 :
+		#   gen_size = 300
+		# elif fixed_gen == 0:
+		#   gen_size = 2000
+
+		# nested class 때문에 아래와 같이 새로 정의
+		x, y = self.x[current_level], self.y[current_level]
+		HKtype = self.HKtype
+		total_F = self.total_F
 
 		def GA_cal_kriging(x, y, X, current_level):
+
 			N_pts = x.shape[0]
 			R = cal_R(x, y, X, HKtype)
 			invR = np.linalg.inv(R)
 			F = total_F[current_level]
 			transF = F.transpose()
-
 			beta = cal_beta(y, F, invR, transF)
 			sigmaSQ = cal_sigmaSQ(N_pts, y, F, beta, invR)
 			MLE = cal_MLE(N_pts, sigmaSQ, R)
 
 			return MLE
 
-		if HKtype == "Interpolation":  # Hyper-parameter : theta only
+		if HKtype == ("i" or "I"):  # Hyper-parameter : theta only
 
 			class MyProblem(ElementwiseProblem):
+
 				def __init__(self):
 					super().__init__(n_var=n_var,
 					                 n_obj=1,
 					                 n_constr=0,
 					                 xl=np.array([-6.] * n_var),
-					                 xu=np.array([3.] * n_var))
+					                 xu=np.array([3.] * n_var),
+
+					                 )
 
 				def _evaluate(self, X, out, *args, **kwargs):
 					X = 10 ** X  # theta는 log scale로 최적화
-					asdf = GA_cal_kriging(x, y, X, iLevel)
+					asdf = GA_cal_kriging(x, y, X, current_level)
 					asdf = asdf.astype('float32')
 					obj1 = -asdf
 					out["F"] = np.column_stack([obj1])
 
 			# class MyDisplay(Display):
-			#     def _do(self, problem, evaluator, algorithm):
-			#         super()._do(problem, evaluator, algorithm)
+			#
+			# 	def _do(self, problem, evaluator, algorithm):
+			# 		super()._do(problem, evaluator, algorithm)
 
 			problem = MyProblem()
 
 			algorithm = GA(pop_size=pop_size,
-			               mutation=get_mutation("real_pm", prob=0.2),
-			               eliminate_duplicates=True)
-
-			termination = DesignSpaceToleranceTermination(tol=10 ** -4, n_last=40)
-			res = minimize(problem, algorithm, termination, ("n_gen", gen_size),
-			               #  verbose=True, #  disply = MyDisplay()
+			               mutation=PM(prob=0.2),
+			               eliminate_duplicates=True
 			               )
+
+			if fixed_gen == 1:
+
+				res = minimize(problem,
+				               algorithm,
+				               ("n_gen", gen_size),
+				               #  verbose=True,
+				               #  disply = MyDisplay()
+
+				               )
+			elif fixed_gen == 0:
+				termination = DesignSpaceTermination(tol=10 ** -4)
+				res = minimize(problem,
+				               algorithm,
+				               termination,
+				               ("n_gen", gen_size),
+				               #  verbose=True,
+				               #  disply = MyDisplay()
+
+				               )
 
 			opt = res.X
 			opt = 10 ** opt
 			# res.algorithm.pop : 마지막 population임 추후 initialization에 사용 가능
 			return opt, res.F, res.algorithm.n_gen
 
-		else:  # HKtype == "Regression": Hyper-parameter : theta, nugget
+		elif HKtype == ("r" or "R"):  # Hyper-parameter : theta, nugget
 			class MyProblem(ElementwiseProblem):
+
 				def __init__(self):
 					super().__init__(n_var=n_var + 1,  # nugget과 order를 추가로 고려하기에 +2
 					                 n_obj=1,
 					                 n_constr=0,
 					                 xl=np.array([-6.] * n_var + [-12.]),  # cubit spline --> 변수개수 + nugget
-					                 xu=np.array([3.] * n_var + [0.]))
+					                 xu=np.array([3.] * n_var + [0.]),
+
+					                 )
 
 				def _evaluate(self, X, out, *args, **kwargs):
 					X = 10 ** X  # theta랑 nugget은 log scale로 최적화
-					asdf = GA_cal_kriging(x, y, X, iLevel)
+					asdf = GA_cal_kriging(x, y, X, current_level)
 					asdf = asdf.astype('float32')
 					obj1 = -asdf
 					out["F"] = np.column_stack([obj1])
 
 			# class MyDisplay(Display):
-			#     def _do(self, problem, evaluator, algorithm):
-			#         super()._do(problem, evaluator, algorithm)
+			#
+			# 	def _do(self, problem, evaluator, algorithm):
+			# 		super()._do(problem, evaluator, algorithm)
 
 			problem = MyProblem()
 
 			algorithm = GA(pop_size=pop_size,
-			               mutation=get_mutation("real_pm", prob=0.2),
-			               eliminate_duplicates=True)
-
-			termination = DesignSpaceToleranceTermination(tol=10 ** -4, n_last=40)
-			res = minimize(problem, algorithm, termination, ("n_gen", gen_size),
-			               #  verbose=True, #  disply = MyDisplay()
+			               mutation=PM(prob=0.2),
+			               eliminate_duplicates=True
 			               )
+
+			if fixed_gen == 1:
+
+				res = minimize(problem,
+				               algorithm,
+				               ("n_gen", gen_size),
+				               #  verbose=True,
+				               #  disply = MyDisplay()
+
+				               )
+			elif fixed_gen == 0:
+				termination = DesignSpaceTermination(tol=10 ** -4)
+				res = minimize(problem,
+				               algorithm,
+				               termination,
+				               ("n_gen", gen_size),
+				               #  verbose=True,
+				               #  disply = MyDisplay()
+
+				               )
 
 			opt = res.X
 			opt = 10 ** opt
-
 			return opt, res.F, res.algorithm.n_gen
 
+	###################################
+	def opt_on_surrogate(self, xl, xu, pop, gen, current_level, VALorEI, morM="M"):
+		# morM : y값을 최소화면 "m" 최대화면 "M"
+		# VALorEI : 함수값 최적화면 "VAL" EI 최적화면 "EI" VFEI 최적화면 "VFEI"
+		n_var = self.x[current_level].shape[1]
+		pop_size = pop
+		gen_size = gen
+		total_level = self.total_level
+		if VALorEI == "VFEI":  # 변수 하나 늘려야됨: fidelity level
+			xl = np.append(xl, 0)
+			xu = np.append(xu, total_level - 1)
+			n_var += 1
 
-# In[70]:
+		# nested class 때문에 아래와 같이 외부의 함수를 부르는 함수 생성
+		def predict(x_test, pred_fidelity):
+			return self.predict(x_test, pred_fidelity)
 
+		def opt_cal_EI(x_test, current_level, morM):
+			return self.cal_EI(x_test, current_level, morM)
 
-from xml.dom.minidom import parseString
-from xml.etree import ElementTree
+		def opt_cal_VFEI(x_test, current_level, morM):
+			return self.cal_VFEI(x_test, current_level, morM)
 
-import os
-import copy
-import numpy as np
+		class MyProblem(ElementwiseProblem):
 
+			def __init__(self):
+				if VALorEI != "VFEI":  # VFEI가 아닐 때
+					super().__init__(n_var=n_var,
+					                 n_obj=1,
+					                 n_constr=0,
+					                 xl=xl,
+					                 xu=xu,
 
-class DictExchange:
-	def __init__(self):
-		return
+					                 )
+				else:  # VFEI는 level까지 최적화 변수에 포함되어 특별한 처리가 필요 "https://pymoo.org/customization/mixed_variable_problem.html"
+					super().__init__(n_var=n_var,  # 마지막 변수는 fidelity level
+					                 n_obj=1,
+					                 n_constr=0,
+					                 xl=xl,
+					                 xu=xu,
 
-	def dict_to_xml(self, q, fdir, fname):
-		"""
-		:param q: Dictionary
-		:param fdir: file path
-		:param fname: file name
-		:return:
-		"""
+					                 )
 
-		fpath = os.path.join(fdir, fname)
+			def _evaluate(self, X, out, *args, **kwargs):
+				X = np.array([X])
 
-		xml = self._dict_to_xml(q)
-		xml = ElementTree.tostring(xml)
-		dom = (parseString(xml)).toprettyxml()
+				if VALorEI == "VAL" and morM == "m":
+					asdf = opt_pred_y_MSE(X, current_level)[0]
 
-		xmlfile = open(fpath, "w")
-		xmlfile.write(dom)
-		xmlfile.close()
-		return
+				elif VALorEI == "VAL" and morM == "M":
+					asdf = -opt_pred_y_MSE(X, current_level)[0]
 
-	def _dict_to_xml(self, q, parent_node=None):
-		"""
-		:param q: dictionary
-		:param parent_node: (None : root, Else : recursive parent)
-		:return:
-		"""
+				elif VALorEI == "EI":  # EI는 항상 maximize
+					asdf = -opt_cal_EI(X, current_level, morM)
 
-		def add_node(key, value, parent):
-			node = ElementTree.SubElement(parent, key)
+				elif VALorEI == "VFEI":  # VFEI는 항상 maximize
+					asdf = -opt_cal_VFEI(X[0, :-1], X[0, -1], morM)
 
-			if isinstance(value, list):
-				for i in range(0, len(value), 1):
-					child = ElementTree.SubElement(node, 'param')
-					child.text = str(value[i])
-			else:
-				node.text = str(value)
+				obj1 = asdf.astype('float32')
+				out["F"] = np.column_stack([obj1])
 
-			return node
+		problem = MyProblem()
 
-		if parent_node is None:  # root
-			node = ElementTree.Element("Items")
+		if VALorEI != "VFEI":  # VFEI가 아닐 때
+			algorithm = GA(pop_size=pop_size,
+			               mutation=PM(prob=0.2),
+			               eliminate_duplicates=True
+			               )
+
+		else:  # VFEI는 level까지 최적화 변수에 포함되어 특별한 처리가 필요 "https://pymoo.org/customization/mixed_variable_problem.html"
+			mask = ["real"] * (n_var - 1) + ["int"]  # n_var 개수만큼의 real dv와 1개의 int dv (fidelity level)
+
+			sampling = MixedVariableSampling(mask, {
+				"real": get_sampling("real_random"),
+				"int": get_sampling("int_random")
+			})
+
+			crossover = MixedVariableCrossover(mask, {
+				"real": get_crossover("real_sbx", prob=1.0, eta=3.0),
+				"int": get_crossover("int_sbx", prob=1.0, eta=3.0)
+			})
+
+			mutation = MixedVariableMutation(mask, {
+				"real": get_mutation("real_pm", eta=3.0),
+				"int": get_mutation("int_pm", eta=3.0)
+			})
+
+			algorithm = GA(pop_size=pop_size,
+			               sampling=sampling,
+			               crossover=crossover,
+			               mutation=mutation,
+			               # mutation=get_mutation("real_pm", prob=0.2),
+			               eliminate_duplicates=True
+			               )
+		if VALorEI != "VFEI":  # VFEI가 아닐 때
+			termination = DesignSpaceTermination(tol=10 ** -4)
+
+			res = minimize(problem,
+			               algorithm,
+			               termination,
+			               ("n_gen", gen_size)
+			               #  verbose=True,
+			               )
 		else:
-			node = parent_node
+			res = minimize(problem,
+			               algorithm,
+			               ("n_gen", gen_size)
+			               #  verbose=True,
 
-		""" Recursive Loop """
+			               )
 
-		for key, value in q.items():
-			if isinstance(value, dict):
-				if (key[0] == "F") or (key[0] == "P"):
-					_type = key[0:6].upper()
-				elif key[0] == "B":
-					qb = q["Body"]
-					if ("Nose" in qb) or ("Centr" in qb) or ("Aft" in qb):
-						_type = "AXIBOD1"
-						for _key, _value in qb.items():
-							if "ENOSE" in _value:
-								_type = "ELLBOD1"
-								break
-							elif "ECENTR" in _value:
-								_type = "ELLBOD1"
-								break
-							elif "EAFT" in _value:
-								_type = "ELLBOD1"
-								break
-					else:
-						if "R" in qb:
-							_type = "AXIBOD2"
-						else:
-							_type = "ELLBOD2"
-				elif (key == "Nose"):
-					if ("ENOSE" not in value):
-						_type = "AXINOSE"
-					else:
-						_type = "ELLNOSE"
-				elif (key == "Centr"):
-					if ("ECENTR" not in value):
-						_type = "AXICENTR"
-					else:
-						_type = "ELLCENTR"
-				elif (key == "Aft"):
-					if ("EAFT" not in value):
-						_type = "AXIAFT"
-					else:
-						_type = "ELLAFT"
-				else:
-					_type = key.upper()
+		opt = res.X
 
-				_attrib = {"Type": _type, "Name": key}
-				child = ElementTree.SubElement(node, "Item", attrib=_attrib)
+		if VALorEI == "VAL" and morM == "m":
+			return opt, res.F
+		elif VALorEI == "VAL" and morM == "M":
+			return opt, -res.F
+		elif VALorEI == "EI":
+			return opt, -res.F
+		elif VALorEI == "VFEI":
+			return opt[-1], opt[:-1], -res.F  # opt fidelity level, opt dv, opt value
 
-				self._dict_to_xml(value, child)
-			else:
-				add_node(key, value, node)
+	###################################
+	def cal_EI(self, x_test, current_level, morM):
+		# morM : 함수를 최소화면 "m" 최대화면 "M"
+		x_test = x_test.reshape(-1, self.x[current_level].shape[1])
 
-		return node
+		def I(x_test, current_level, morM):
+			if morM == "m":
+				return np.min(self.y[current_level]) - self.predict(x_test, current_level)[0]  # ymin - ypred
+			elif morM == "M":
+				return self.predict(x_test, current_level)[0] - np.max(self.y[current_level])  # ypred - ymax
 
-	def xml_to_dict(self, fdir, fname):
-		fpath = os.path.join(fdir, fname)
-		doc = ElementTree.parse(fpath)
-		root = doc.getroot()
+		I = I(x_test, current_level, morM)
+		s = self.predict(x_test, current_level)[1]
+		EI = np.zeros(1)
 
-		q = self._parse(root)
+		for enu, x in enumerate(s):  # s > 0
+			if x > 0:
+				EI[enu] = I[enu] * scipy.stats.norm.cdf(I[enu] / s[enu]) + s[enu] * scipy.stats.norm.pdf(
+					I[enu] / s[enu])
 
-		return q
+		return EI
 
-	def _parse(self, item):
-		numlist = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "-"]
-		q = {}
-		for child in item:
-			if "Type" in child.attrib:  # Dictionary
-				_name = child.attrib["Name"]
-				_q = self._parse(child)
-				q[_name] = _q
-			else:
-				if len(list(child)) > 0:
-					_list = []
-					for _child in child:  # List
-						if _child.text == "None":
-							_list.append(None)
-						else:
-							if _child.text[0] in numlist:
-								if "." in _child.text:
-									_list.append(float(_child.text))
-								elif "e" in _child.text:
-									_list.append(float(_child.text))
-								else:
-									_list.append(int(_child.text))
-							else:
-								_list.append(_child.text)
-					q[child.tag] = _list
-				else:
-					if child.text[0] in numlist:  # number
-						if "." in child.text:
-							q[child.tag] = float(child.text)
-						else:
-							q[child.tag] = int(child.text)
-					else:  # string
-						if child.text == "None":
-							q[child.tag] = None
-						else:
-							q[child.tag] = child.text
-		return q
+	###################################
+	def cal_VFEI(self, x_test, current_level, morM):
+		# morM : 함수를 최소화면 "m" 최대화면 "M"
+		# level과 dv를 동시에 고려한 최적화가 필요한데 이때 아래 참고
+		# https://pymoo.org/customization/mixed_variable_problem.html
+		x_test = x_test.reshape(-1, self.x[current_level].shape[1])
 
-	def dv_to_dict(self, q_ori, dvName, dv):
-		numlist = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "-"]
+		def I(x_test, current_level, morM):
+			if morM == "m":
+				return np.min(self.y[current_level]) - self.predict(x_test, current_level)[0]  # ymin - ypred
+			elif morM == "M":
+				return self.predict(x_test, current_level)[0] - np.max(self.y[current_level])  # ypred - ymax
 
-		if np.ndim(dv) == 1:
-			dv = np.resize(dv, (1, len(dv)))
+		I = I(x_test, self.total_level - 1, morM)  # VF_EI는 Highest-fidelity 기준이여서 self.total_level-1을 넣어야
+		s = self.predict(x_test, current_level)[1]
 
-		nsamples = len(dv)
-		ndv = len(dvName)
+		for level in range(self.total_level - current_level - 1):
+			s *= self.total_beta[-level - 1 - 1]
 
-		params = [None] * nsamples
-		for i in range(0, nsamples, 1):
-			q = copy.deepcopy(q_ori)
+		s = np.sqrt(np.square(s))
+		EI = np.zeros(1)
 
-			for j in range(0, ndv, 1):
-				str = dvName[j].split("_")
-				if len(str) == 2:  # Finset1_XLE
-					q["Model"][str[0]][str[1]] = dv[i, j]
-				else:
-					if str[-1][0] in numlist:  # Finset1_CHORD_1
-						q["Model"][str[0]][str[1]][int(str[2]) - 1] = dv[i, j]
-					else:
-						q["Model"][str[0]][str[1]][str[2]] = dv[i, j]
+		for enu, x in enumerate(s):  # s > 0
+			if x > 0:
+				EI[enu] = I[enu] * scipy.stats.norm.cdf(I[enu] / s[enu]) + s[enu] * scipy.stats.norm.pdf(
+					I[enu] / s[enu])
 
-			params[i] = q
+		return EI
 
-		return params
+	###################################
+	def Rsq(self, x, y_real, level):
+		y_pred = self.pred_y_MSE(x, level)[0]
+		correlation_matrix = np.corrcoef(y_pred, y_real)
+		correlation_xy = correlation_matrix[0, 1]
+		return correlation_xy ** 2
 
+	###################################
+	def RMSE(self, x, y_real, level):
+		y_pred = self.predict(x, level)[0]
+		ans = np.sqrt((np.sum((y_pred - y_real) ** 2)) / y_real.shape[0])
+		return ans
 
-# In[71]:
-
-
-import pandas as pd
-import numpy as np
-import torch
-from sklearn.metrics import r2_score
-
-
-def read_dat(filename="DOEset1.csv"):
-	with open(filename) as file_:
-		file = pd.read_csv(file_)
-		file = np.array(file.values)
-		inp_dataset = file[:, :7]
-		out_dataset = file[:, 7:]
-
-	return inp_dataset, out_dataset
-
-
-class DataFusionMethodFactory:
-	def __init__(self):
-		return
-
-	def getDataFusion(self, method, XList, YList, qDdataFusion):
-		if method == "HK":
-			#             from DataFusionNew.Method.HK.HK import HK
-			return HK(XList, YList, qDdataFusion[method])
-		else:
-			#             from DataFusionNew.Method.MFDNN.MFDNN import MFDNN
-			return MFDNN(XList, YList, qDdataFusion[method])
-
-
-import matplotlib.pyplot as plt
-
-out_coef = ["Cx", "Cy", "Cz", "Cl", "Cm", "Cn"]
-
-
-def Comparison_plot(model, X, true_y, out_idx=0, NLevel=1, color='k', title=None, label="", saveDir=""):
-	NLevel -= 1  # HK모델의 level은 0부터 시작함. MFDNN은 1부터 시작함
-	YPredict = model.prediction(X, NLevel, out_idx)[0]
-	r2sq = r2_score(true_y[:, out_index], YPredict)
-	plt.scatter(true_y[:, out_index], YPredict, edgecolor='k', facecolors=color, s=70,
-	            label=label + f"$R^2$={r2sq:.3f}")
-	min_ = np.min(np.array([np.min(true_y[:, out_index]), np.min(YPredict)]))
-	max_ = np.max(np.array([np.max(true_y[:, out_index]), np.max(YPredict)]))
-	plt.plot([min_, max_], [min_, max_], ls='--', c='r', zorder=1, lw=5)
-	plt.title(f"{title}: {out_coef[out_index]}", fontsize=20)
-	plt.xlabel("Real values", fontsize=20)
-	plt.ylabel("Predicted values", fontsize=20)
-	if label is not None:
-		plt.legend(fontsize=20, frameon=False)
-	#     if out_index == 3:
-	#         plt.xlim(-0.04,0.04)
-	#         plt.ylim(-0.04,0.04)
-	return plt
-
-
-# In[72]:
-
-
-LF_train_pts = 100
-HF_train_pts = 50
-
-Fake2_LF_inp, Fake2_LF_out = read_dat("./HK_fake2_50/Fake2_LF.csv")
-Fake2_LF_inp = np.delete(Fake2_LF_inp, obj=1, axis=1)
-LF_test_idx = np.random.choice(Fake2_LF_out.shape[0], 1053 - LF_train_pts, replace=False)
-LF_test_mask = np.ones(Fake2_LF_out.shape[0], dtype=bool)
-LF_test_mask[LF_test_idx] = False
-
-Fake2_HF_inp, Fake2_HF_out = read_dat("./HK_fake2_50/Fake2_HF.csv")
-Fake2_HF_inp = np.delete(Fake2_HF_inp, obj=1, axis=1)
-test_idx = np.random.choice(Fake2_HF_out.shape[0], 500 - HF_train_pts, replace=False)
-test_mask = np.ones(Fake2_HF_out.shape[0], dtype=bool)
-test_mask[test_idx] = False
-
-Fake2_LF_inp_test, Fake2_LF_inp_train = Fake2_LF_inp[~LF_test_mask], Fake2_LF_inp[LF_test_mask]
-Fake2_LF_out_test, Fake2_LF_out_train = Fake2_LF_out[~LF_test_mask], Fake2_LF_out[LF_test_mask]
-
-Fake2_HF_inp_test, Fake2_HF_inp_train = Fake2_HF_inp[~test_mask], Fake2_HF_inp[test_mask]
-Fake2_HF_out_test, Fake2_HF_out_train = Fake2_HF_out[~test_mask], Fake2_HF_out[test_mask]
-
-import time
-
-time_ = time.time()
-# for HF_pts in [100,200,300,400,500]:
-# for HF_pts in [25,50,75]:
-for HF_pts in [HF_train_pts]:
-	HF_idx = np.random.choice(Fake2_HF_out_train.shape[0], HF_pts, replace=False)
-	XList_fake2 = [Fake2_LF_inp_train, Fake2_HF_inp_train[HF_idx]]
-	YList_fake2 = [Fake2_LF_out_train, Fake2_HF_out_train[HF_idx]]
-
-	saveDir = f"HK_fake2_{HF_pts}"
-	qDataFusion_fake2 = DictExchange().xml_to_dict(saveDir, "DataFusion_params_fake.xml")
-	method_fake2 = ""
-	for key, value in qDataFusion_fake2.items():
-		method_fake2 = key
-		break
-
-	# Regression
-	factory_fake2 = DataFusionMethodFactory()
-	dataFusion_fake2 = factory_fake2.getDataFusion(method_fake2, XList_fake2, YList_fake2, qDataFusion_fake2)
-	dataFusion_fake2.regression()
-	dataFusion_fake2.saveParameter(saveDir)
-print(time.time() - time_)
-
-# In[74]:
-
-
-for HF_pts in [HF_train_pts]:
-
-	y_at_LF = []
-
-	for out_index in range(0, 6):
-		saveDir = f"HK_fake2_{HF_pts}"
-		qDataFusion_fake2 = DictExchange().xml_to_dict(saveDir, "DataFusion_params_fake.xml")
-		method_fake2 = ""
-		for key, value in qDataFusion_fake2.items():
-			method_fake2 = key
-			break
-		factory_fake2 = DataFusionMethodFactory()
-		dataFusion_fake2 = factory_fake2.getDataFusion(method_fake2, XList_fake2, YList_fake2, qDataFusion_fake2)
-		dataFusion_fake2.loadParameter(saveDir, out_index)
-
-		Comparison_plot(model=dataFusion_fake2, X=Fake2_HF_inp_test[:], true_y=Fake2_HF_out_test[:], out_idx=out_index,
-		                NLevel=1, color='y', label='LF: ', title=f"HK model", saveDir=saveDir)
-		Comparison_plot(model=dataFusion_fake2, X=Fake2_HF_inp_test[:], true_y=Fake2_HF_out_test[:], out_idx=out_index,
-		                NLevel=2, label='MF: ', title=f"HK model", saveDir=saveDir)
-		plt.show()
-
-		y_at_LF.append(dataFusion_fake2.prediction(x_test=XList_fake2[0], test_level=1, iobj=out_index)[0])
-	y_at_LF = np.array(y_at_LF).T
-	csv_data = np.concatenate((XList_fake2[0], y_at_LF), axis=1)
-	csv_data = np.insert(csv_data, obj=1, values=0, axis=1)
-	csv_data = pd.DataFrame(csv_data)
-	csv_data.to_csv(saveDir + f"/fake2_{HF_pts}.csv", index=False, header=False)
-
+	###################################
+	def MAE(self, x, y_real, level):
+		y_pred = self.predict(x, level)[0]
+		ans = np.sum(np.abs(y_pred - y_real)) / y_real.shape[0]
+		return ans
