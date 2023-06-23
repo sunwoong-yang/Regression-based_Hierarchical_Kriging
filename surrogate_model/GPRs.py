@@ -5,9 +5,6 @@ from PrePost.PrePost import *
 
 class GPRs():  # 얘를 그냥 기존 GPR에 넣어서 output dim 알아서 감지하고, predict할때는 y_idx넣어서 한 gpr 모델의 output만 내뱉도록 하자
     def __init__(self, n_restarts=None, alpha=None, kernel=None, **kwargs):
-        # self.n_restarts = n_restarts
-        # self.alpha = alpha
-        # self.kernel = kernel
         self.models = []
         self.kwargs = kwargs
 

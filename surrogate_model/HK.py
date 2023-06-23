@@ -12,9 +12,13 @@ import time
 class HK:
 
 	###################################
-	def __init__(self, x, y, n_pop=100, n_gen=100, HKtype="r"):
+	def __init__(self, x, y, n_pop=None, n_gen=None, HKtype="r"):
 		self.t_start = time.time()
 		self.x, self.y = x, y
+		if n_pop is None:
+			n_pop = [100] * len(x)
+		if n_gen is None:
+			n_gen = [100] * len(x)
 		self.pop, self.gen = np.array(n_pop), np.array(n_gen)
 		self.total_level = len(x)
 		self.current_level = 0
@@ -78,7 +82,7 @@ class HK:
 		self.total_F.append(F)
 
 	###################################
-	def predict(self, x_test, pred_fidelity=None, surro_dir=None):  # $%^&
+	def predict(self, x_test, pred_fidelity=None, surro_dir=None, UQ=True):  # $%^&
 		# HF들의 y와 MSE 계산에는 r_vector와 y_pred의 계산만 새로 필요. 나머지는 새로 계산할 필요 없음
 
 		if pred_fidelity is None:
@@ -97,7 +101,7 @@ class HK:
 			temp_X = self.total_opt_theta[pred_fidelity]
 			temp_X = np.append(temp_X, self.total_opt_nugget[pred_fidelity])
 
-		r_vector = self.cal_r_vector(x_test, temp_X, pred_fidelity)
+		r_vector = cal_r_vector(self.x[pred_fidelity], x_test, temp_X, self.HKtype)
 		F = self.total_F[pred_fidelity]  #### self.total_F >>> total_F
 		beta = self.total_beta[pred_fidelity]
 		sigmaSQ = self.total_sigmaSQ[pred_fidelity]
@@ -159,21 +163,24 @@ class HK:
 
 		MSE = np.array(MSE)
 		MSE[MSE < 0] = 0
-		return y_pred, np.sqrt(MSE)
 
+		if UQ:
+			return y_pred, np.sqrt(MSE)
+		else:
+			return y_pred
 	###################################
 	def opt_aft_action(self, x, y, opt_X):
 
 		N_pts = self.x[self.current_level].shape[0]
-		R = self.cal_R(x, y, opt_X)
+		R = cal_R(x, y, opt_X, self.HKtype)
 		invR = np.linalg.inv(R)
 
 		F = self.total_F[self.current_level]
 
 		transF = F.transpose()
-		beta = self.cal_beta(self.y[self.current_level], F, invR, transF)
-		sigmaSQ = self.cal_sigmaSQ(N_pts, self.y[self.current_level], F, beta, invR)
-		MLE = self.cal_MLE(N_pts, sigmaSQ, R)
+		beta = cal_beta(self.y[self.current_level], F, invR, transF)
+		sigmaSQ = cal_sigmaSQ(N_pts, self.y[self.current_level], F, beta, invR)
+		MLE = cal_MLE(N_pts, sigmaSQ, R)
 
 		if self.HKtype == ("i" or "I"):
 			opt_theta = opt_X

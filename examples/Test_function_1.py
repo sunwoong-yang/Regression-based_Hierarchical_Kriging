@@ -31,7 +31,8 @@ LF_y = LF_function(LF_x).reshape(-1,1)
 MF_y = MF_function(MF_x).reshape(-1,1)
 HF_y = HF_function(HF_x).reshape(-1,1)
 
-hk = HK(x=[LF_x, MF_x, HF_x], y=[LF_y, MF_y, HF_y], n_pop=[100,100], n_gen=[100,100], HKtype="r")
+hk = HK(x=[LF_x, MF_x, HF_x], y=[LF_y.reshape(-1), MF_y.reshape(-1), HF_y.reshape(-1)], n_pop=[100,100,100], n_gen=[100,100,100], HKtype="r")
+
 hk.fit()
 
 
@@ -54,7 +55,7 @@ pred_LF_y = mfdnn.predict(test_x, pred_fidelity=0)
 pred_MF_y = mfdnn.predict(test_x, pred_fidelity=1)
 pred_HF_y = mfdnn.predict(test_x, pred_fidelity=2)
 
-pred_HF_y_HK = hk.predict(test_x, pred_fidelity=2, history=True)
+pred_HF_y_HK = hk.predict(test_x, pred_fidelity=2, UQ=False)
 
 
 fig, ax = plt.subplots(dpi=300)
@@ -66,6 +67,7 @@ ax.plot(test_x, pred_LF_y, c='C0', label="LF pred")
 ax.plot(test_x, pred_MF_y, c='C1', label="MF pred")
 ax.plot(test_x, pred_HF_y, c='C2', label="HF pred")
 ax.plot(test_x, hfdnn.predict(test_x), c='C3', label="Only HF pred")
+ax.plot(test_x, pred_HF_y_HK, c='C4', label="RHK")
 
 ax.legend()
 plt.show()

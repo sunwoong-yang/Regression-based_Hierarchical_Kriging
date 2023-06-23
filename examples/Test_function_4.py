@@ -2,6 +2,7 @@ import numpy as np
 
 import torch.nn as nn
 from surrogate_model.MFDNN import MFDNN
+from surrogate_model.HK import HK
 import matplotlib.pyplot as plt
 from pyDOE import lhs
 
@@ -36,6 +37,9 @@ LF_y = LF_function(LF_x).reshape(-1,1)
 MF_y = MF_function(MF_x).reshape(-1,1)
 HF_y = HF_function(HF_x).reshape(-1,1)
 
+hk = HK(x=[LF_x, MF_x, HF_x], y=[LF_y.reshape(-1), MF_y.reshape(-1), HF_y.reshape(-1)], n_pop=[100,100,100], n_gen=[100,100,100], HKtype="r")
+hk.fit()
+
 criterion_ = nn.MSELoss()
 mfdnn = MFDNN(input_dim=in_dim, output_dim=out_dim)
 mfdnn.add_fidelity(hidden_layers=[10, 10], activation="GELU", criterion=criterion_, lr=1e-3, epochs=3000)
@@ -55,11 +59,14 @@ pred_LF_y = mfdnn.predict(test_x, pred_fidelity=0)
 pred_MF_y = mfdnn.predict(test_x, pred_fidelity=1)
 pred_HF_y = mfdnn.predict(test_x, pred_fidelity=2)
 
+pred_HF_y_HK = hk.predict(test_x, pred_fidelity=2, UQ=False)
+
 fig, ax = plt.subplots(dpi=300)
 ax.scatter(HF_function(test_x), pred_LF_y, edgecolors='C0', label="LF", facecolors='none')
 ax.scatter(HF_function(test_x), pred_MF_y, edgecolors='C1', label="MF", facecolors='none')
 ax.scatter(HF_function(test_x), pred_HF_y, edgecolors='C2', label="HF", facecolors='none')
 ax.scatter(HF_function(test_x), hfdnn.predict(test_x), edgecolors='C3', label="Only HF pred", facecolors='none')
+ax.scatter(HF_function(test_x),pred_HF_y_HK, edgecolors='C4', label="RHK", facecolors='none')
 lims = [np.min([ax.get_xlim(), ax.get_ylim()]), np.max([ax.get_xlim(), ax.get_ylim()])]
 ax.plot(lims, lims, '--k')
 ax.set_xlim(lims)
