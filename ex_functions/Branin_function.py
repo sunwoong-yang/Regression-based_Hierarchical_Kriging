@@ -1,7 +1,6 @@
 import numpy as np
 
 import torch.nn as nn
-from surrogate_model.MFDNN import MFDNN
 from surrogate_model.HK import HK
 import matplotlib.pyplot as plt
 from pyDOE import lhs

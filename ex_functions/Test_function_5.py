@@ -1,52 +1,40 @@
 import numpy as np
 
 import torch.nn as nn
-from surrogate_model.MFDNN import MFDNN
 from surrogate_model.HK import HK
 import matplotlib.pyplot as plt
 from pyDOE import lhs
 
 """
-Test_function_7 can be found here
+Test_function_5 can be found here
 Xiong, F., Ren, C., Mo, B., Li, C., & Hu, X. (2023). A new adaptive multi-fidelity metamodel method using meta-learning and Bayesian deep learning. Structural and Multidisciplinary Optimization, 66(3), 58.
 [Link] https://link.springer.com/article/10.1007/s00158-023-03518-8
-However, LF and MF functions in the above ref are erroneous. Therefore, in this code, sigma from i=1 to 15 is changed to "i=1 ~ 14"
 """
-in_dim = 15
-out_dim = 1
+in_dim=6
+out_dim=1
 def LF_function(x):
-    y = 0.8 * (x[:, 0] - 1)**2
-    for i in range(1, in_dim):
-        y += 0.7 * (i+1) * (2 * x[:, i]**2 - x[:, i-1])**2
-    for i in range(0, in_dim - 1):
-        y += -0.2 * x[:, i] * x[:, i+1]
-    return y
+    x1, x2, x3, x4, x5, x6 = x[:, 0], x[:, 1], x[:, 2], x[:, 3], x[:, 4], x[:, 5]
+    return 15 * (x1-2)**2 + 0.85 * (x2-2)**2 + 0.6 * (x3-1)**2 + 1.35 * (x4-4)**2 + 0.6 * (x5-1)**2 + 0.6 * (x6-4)**2
 
 def MF_function(x):
-    y = 0.9 * (x[:, 0] - 1) ** 2
-    for i in range(1, in_dim):
-        y += 0.9 * (i + 1) * (2 * x[:, i]**2 - x[:, i - 1]) ** 2
-    for i in range(0, in_dim - 1):
-        y += -0.1 * x[:, i] * x[:, i + 1]
-    return y
+    x1, x2, x3, x4, x5, x6 = x[:, 0], x[:, 1], x[:, 2], x[:, 3], x[:, 4], x[:, 5]
+    return 20 * (x1-2)**2 + 0.95 * (x2-2)**2 + 0.8 * (x3-1)**2 + 1.05 * (x4-4)**2 + 0.8 * (x5-1)**2 + 0.7 * (x6-4)**2
 
 def HF_function(x):
-    y = 1.0 * (x[:, 0] - 1) ** 2
-    for i in range(1, in_dim):
-        y += 1.0 * (i + 1) * (2 * x[:, i]**2 - x[:, i - 1]) ** 2
-    return y
+    x1, x2, x3, x4, x5, x6 = x[:, 0], x[:, 1], x[:, 2], x[:, 3], x[:, 4], x[:, 5]
+    return 25 * (x1-2)**2 + 1.00 * (x2-2)**2 + 1.00 * (x3-1)**2 + 1.00 * (x4-4)**2 + 1.00 * (x5-1)**2 + 1.00 * (x6-4)**2
 
 
-LF_x = lhs(in_dim, samples=300, criterion='maximin') * 1 + 0.5
-MF_x = lhs(in_dim, samples=250, criterion='maximin') * 1 + 0.5
-HF_x = lhs(in_dim, samples=200, criterion='maximin') * 1 + 0.5
+LF_x = lhs(in_dim, samples=100, criterion='maximin') * 2 + 4
+MF_x = lhs(in_dim, samples=50, criterion='maximin') * 2 + 4
+HF_x = lhs(in_dim, samples=10, criterion='maximin') * 2 + 4
 
 LF_y = LF_function(LF_x).reshape(-1,1)
 MF_y = MF_function(MF_x).reshape(-1,1)
 HF_y = HF_function(HF_x).reshape(-1,1)
 
-hk = HK(x=[LF_x, MF_x, HF_x], y=[LF_y, MF_y, HF_y], n_pop=[200,200,200], n_gen=[200,200,200], HKtype="r")
-hk.fit(history=True)
+hk = HK(x=[LF_x, MF_x, HF_x], y=[LF_y, MF_y, HF_y], n_pop=[100,100,100], n_gen=[100,100,100], HKtype="r")
+hk.fit()
 
 criterion_ = nn.MSELoss()
 mfdnn = MFDNN(input_dim=in_dim, output_dim=out_dim)
@@ -61,7 +49,7 @@ hfdnn.add_fidelity(hidden_layers=[10, 10], activation="GELU", criterion=criterio
 
 hfdnn.fit(train_x=[HF_x], train_y=[HF_y])
 
-test_x = lhs(in_dim, samples=100, criterion='maximin') * 1 + 0.5
+test_x = lhs(in_dim, samples=100, criterion='maximin') * 2 + 4
 
 pred_LF_y = mfdnn.predict(test_x, pred_fidelity=0)
 pred_MF_y = mfdnn.predict(test_x, pred_fidelity=1)

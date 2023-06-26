@@ -1,8 +1,6 @@
 import numpy as np
 
 import torch.nn as nn
-import torch.optim as optim
-from surrogate_model.MFDNN import MFDNN
 from surrogate_model.HK import HK
 import matplotlib.pyplot as plt
 
