@@ -9,7 +9,7 @@ Xiong, F., Ren, C., Mo, B., Li, C., & Hu, X. (2023). A new adaptive multi-fideli
 [Link] https://link.springer.com/article/10.1007/s00158-023-03518-8
 However, LF and MF functions in the above ref are erroneous. Therefore, in this code, sigma from i=1 to 20 is changed to "i=1 ~ 19"
 """
-
+in_dim = 20
 def LF_function(x):
     y = 0.5 * (x[:, 0] - 1)**2
     for i in range(1, in_dim):

@@ -17,4 +17,4 @@ test_x = lhs(in_dim, samples=100, criterion='maximin') * 1 + 0.5
 ground_truth = HF_function(test_x)
 
 IHK, RHK = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y])
-plot_scatter(test_x, ground_truth, IHK, RHK)
+plot_scatter(test_x, ground_truth, IHK, RHK, title="Function 8")

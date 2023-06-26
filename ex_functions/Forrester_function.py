@@ -5,15 +5,15 @@ from pyDOE import lhs
 
 """
 3 level Forrester functions can be found here
-Xiao, M., Zhang, G., Breitkopf, P., Villon, P., & Zhang, W. (2018). Extended Co-Kriging interpolation method based on multi-fidelity data. Applied Mathematics and Computation, 323, 120-131.
-[Link] https://www.sciencedirect.com/science/article/pii/S0096300317307646
+Ha, H., Oh, S., & Yee, K. (2014). Feasibility study of hierarchical kriging model in the design optimization process. Journal of the Korean Society for Aeronautical & Space Sciences, 42(2), 108-118.
+[Link] http://koreascience.or.kr/article/JAKO201409150678130.pdf
 """
 
 def LF_function(x):
-    return 0.5 * HF_function(x) + 10 * (x - 0.5) + 5
+    return 0.2 * MF_function(x) + 5 * np.sin(x)
 
 def MF_function(x):
-    return 0.4 * HF_function(x) - x - 1
+    return 0.5 * HF_function(x) + 10 * (x - 0.5) + 5
 
 def HF_function(x):
     return ((6 * x - 2)**2) * np.sin(12 * x - 4)

@@ -6,8 +6,8 @@ from pyDOE import lhs
 in_dim = 6
 
 LF_x = lhs(in_dim, samples=100, criterion='maximin') * 2 + 4
-MF_x = lhs(in_dim, samples=50, criterion='maximin') * 2 + 4
-HF_x = lhs(in_dim, samples=10, criterion='maximin') * 2 + 4
+MF_x = lhs(in_dim, samples=75, criterion='maximin') * 2 + 4
+HF_x = lhs(in_dim, samples=50, criterion='maximin') * 2 + 4
 
 LF_y = LF_function(LF_x).reshape(-1, 1)
 MF_y = MF_function(MF_x).reshape(-1, 1)
@@ -17,4 +17,4 @@ test_x = lhs(in_dim, samples=100, criterion='maximin') * 2 + 4
 ground_truth = HF_function(test_x)
 
 IHK, RHK = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y])
-plot_scatter(test_x, ground_truth, IHK, RHK)
+plot_scatter(test_x, ground_truth, IHK, RHK, title="Function 5")

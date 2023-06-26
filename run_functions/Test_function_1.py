@@ -17,4 +17,5 @@ test_x = np.linspace(0, 1, 100).reshape(-1, 1) * 10
 ground_truth = HF_function(test_x)
 
 IHK, RHK = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y])
-plot_scatter(test_x, ground_truth, IHK, RHK)
+# IHK_2level, RHK_2level = train_models([LF_x, HF_x], [LF_y, HF_y])
+plot_scatter(test_x, ground_truth, IHK, RHK, title="Function 1")

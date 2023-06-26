@@ -5,7 +5,7 @@ from pyDOE import lhs
 
 in_dim = 15
 
-LF_x = lhs(in_dim, samples=400, criterion='maximin') * 1 + 0.5
+LF_x = lhs(in_dim, samples=300, criterion='maximin') * 1 + 0.5
 MF_x = lhs(in_dim, samples=200, criterion='maximin') * 1 + 0.5
 HF_x = lhs(in_dim, samples=100, criterion='maximin') * 1 + 0.5
 
@@ -17,4 +17,4 @@ test_x = lhs(in_dim, samples=100, criterion='maximin') * 1 + 0.5
 ground_truth = HF_function(test_x)
 
 IHK, RHK = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y])
-plot_scatter(test_x, ground_truth, IHK, RHK)
+plot_scatter(test_x, ground_truth, IHK, RHK, title="Function 7")
