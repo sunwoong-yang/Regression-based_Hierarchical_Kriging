@@ -1,5 +1,5 @@
 # RHK
-Repository for the paper that proposes the using of Regression-based Hierarchical Kriging, which can alleviate the effect of the noise in the dataset.
+Repository for the paper that proposes the use of Regression-based Hierarchical Kriging, which can alleviate the effect of the noise in the dataset.
 
-![image](https://github.com/sunwoong-yang/SubDamian/assets/65647892/f48685e0-833d-4e17-9722-c3ec527d3846)
-![image](https://github.com/sunwoong-yang/SubDamian/assets/65647892/8ed203be-2797-4d2c-8480-0495b9f02311)
+![image](https://github.com/sunwoong-yang/Regression-based_Hierarchical_Kriging/assets/65647892/2d8c6468-f4ee-4e2e-8fd1-d07eb12ea1ef)
+
