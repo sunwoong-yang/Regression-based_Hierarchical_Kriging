@@ -1,8 +1,7 @@
 import numpy as np
-
-import torch.nn as nn
 from surrogate_model.HK import HK
 import matplotlib.pyplot as plt
+from pyDOE import lhs
 
 """
 3 level Forrester functions can be found here

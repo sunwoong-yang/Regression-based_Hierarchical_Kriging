@@ -1,6 +1,4 @@
 import numpy as np
-
-import torch.nn as nn
 from surrogate_model.HK import HK
 import matplotlib.pyplot as plt
 from pyDOE import lhs
@@ -44,40 +42,17 @@ HF_y = HF_function(HF_x).reshape(-1,1)
 hk = HK(x=[LF_x, MF_x, HF_x], y=[LF_y, MF_y, HF_y], n_pop=[100,100,100], n_gen=[100,100,100], HKtype="r")
 hk.fit(history=False)
 
-criterion_ = nn.MSELoss()
-mfdnn = MFDNN(input_dim=2, output_dim=1)
-mfdnn.add_fidelity(hidden_layers=[25, 25], activation="GELU", criterion=criterion_, lr=1e-3, epochs=3000)
-mfdnn.add_fidelity(hidden_layers=[20, 20], activation="GELU", criterion=criterion_, lr=1e-3, epochs=3000)
-mfdnn.add_fidelity(hidden_layers=[15, 15], activation="GELU", criterion=criterion_, lr=1e-3, epochs=5000)
-
-mfdnn.fit(train_x=[LF_x, MF_x, HF_x], train_y=[LF_y, MF_y, HF_y])
-
-hfdnn = MFDNN(input_dim=2, output_dim=1)
-hfdnn.add_fidelity(hidden_layers=[15, 15], activation="GELU", criterion=criterion_, lr=1e-3, epochs=5000)
-
-hfdnn.fit(train_x=[HF_x], train_y=[HF_y])
-
 test_x = lhs(2, samples=100, criterion='maximin')
 test_x[:, 0] = 15 * test_x[:, 0] - 5
 test_x[:, 1] = 15 * test_x[:, 1]
 
-pred_LF_y = mfdnn.predict(test_x, pred_fidelity=0)
-pred_MF_y = mfdnn.predict(test_x, pred_fidelity=1)
-pred_HF_y = mfdnn.predict(test_x, pred_fidelity=2)
 
 pred_LF_y_HK = hk.predict(test_x, pred_fidelity=0, return_std=False)
 pred_MF_y_HK = hk.predict(test_x, pred_fidelity=1, return_std=False)
 pred_HF_y_HK = hk.predict(test_x, pred_fidelity=2, return_std=False)
 
 fig, ax = plt.subplots(dpi=300)
-# ax.scatter(HF_function(test_x), pred_LF_y, edgecolors='C0', label="LF", facecolors='none')
-# ax.scatter(HF_function(test_x), pred_MF_y, edgecolors='C1', label="MF", facecolors='none')
-ax.scatter(HF_function(test_x), pred_HF_y, edgecolors='C2', label="MFDNN HF", facecolors='none')
-ax.scatter(HF_function(test_x), hfdnn.predict(test_x), edgecolors='C3', label="Only HF pred (MFDNN)", facecolors='none')
 ax.scatter(HF_function(test_x),pred_HF_y_HK, edgecolors='C4', label="RHK", facecolors='none')
-# ax.plot([-100,300], [-100,300], '--k')
-# ax.set_xlim(-100,300)
-# ax.set_ylim(-100,300)
 lims = [np.min([ax.get_xlim(), ax.get_ylim()]), np.max([ax.get_xlim(), ax.get_ylim()])]
 ax.plot(lims, lims, '--k')
 ax.set_xlim(lims)
