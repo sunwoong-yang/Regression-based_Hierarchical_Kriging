@@ -1,4 +1,4 @@
-from ex_functions.Test_function_5 import *
+from functions.Test_function_5 import *
 from run_functions.train_models import train_models
 from PrePost.plot_scatter import plot_scatter
 from PrePost.cal_error import cal_error

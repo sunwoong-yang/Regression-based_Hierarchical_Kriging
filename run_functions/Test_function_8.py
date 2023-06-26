@@ -1,4 +1,4 @@
-from ex_functions.Test_function_8 import *
+from functions.Test_function_8 import *
 from run_functions.train_models import train_models
 from PrePost.plot_scatter import plot_scatter
 from PrePost.cal_error import cal_error
@@ -6,9 +6,9 @@ from pyDOE import lhs
 
 in_dim = 20
 
-LF_x = lhs(in_dim, samples=400, criterion='maximin') * 1 + 0.5
-MF_x = lhs(in_dim, samples=200, criterion='maximin') * 1 + 0.5
-HF_x = lhs(in_dim, samples=100, criterion='maximin') * 1 + 0.5
+LF_x = lhs(in_dim, samples=300, criterion='maximin') * 1 + 0.5
+MF_x = lhs(in_dim, samples=250, criterion='maximin') * 1 + 0.5
+HF_x = lhs(in_dim, samples=200, criterion='maximin') * 1 + 0.5
 
 LF_y = LF_function(LF_x).reshape(-1, 1)
 MF_y = MF_function(MF_x).reshape(-1, 1)
