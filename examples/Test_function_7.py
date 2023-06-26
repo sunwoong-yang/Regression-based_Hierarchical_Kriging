@@ -37,16 +37,16 @@ def HF_function(x):
     return y
 
 
-LF_x = lhs(in_dim, samples=200, criterion='maximin') * 1 + 0.5
-MF_x = lhs(in_dim, samples=100, criterion='maximin') * 1 + 0.5
-HF_x = lhs(in_dim, samples=50, criterion='maximin') * 1 + 0.5
+LF_x = lhs(in_dim, samples=300, criterion='maximin') * 1 + 0.5
+MF_x = lhs(in_dim, samples=250, criterion='maximin') * 1 + 0.5
+HF_x = lhs(in_dim, samples=200, criterion='maximin') * 1 + 0.5
 
 LF_y = LF_function(LF_x).reshape(-1,1)
 MF_y = MF_function(MF_x).reshape(-1,1)
 HF_y = HF_function(HF_x).reshape(-1,1)
 
-hk = HK(x=[LF_x, MF_x, HF_x], y=[LF_y, MF_y, HF_y], n_pop=[100,100,100], n_gen=[100,100,100], HKtype="r")
-hk.fit()
+hk = HK(x=[LF_x, MF_x, HF_x], y=[LF_y, MF_y, HF_y], n_pop=[200,200,200], n_gen=[200,200,200], HKtype="r")
+hk.fit(history=True)
 
 criterion_ = nn.MSELoss()
 mfdnn = MFDNN(input_dim=in_dim, output_dim=out_dim)
