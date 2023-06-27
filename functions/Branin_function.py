@@ -29,28 +29,52 @@ def scaling_x(x):
 
     return x
 
-def plot_Branin(test_x, ground_truth, i_model, r_model):
+def plot_Branin(i_model, r_model, HF_function):
+    lin_pts=51
+    x1, x2 = np.linspace(-5, 10, lin_pts), np.linspace(0, 15, lin_pts)
+    xx, yy = np.meshgrid(x1, x2)
+    test_x = np.hstack((xx.reshape(-1,1), yy.reshape(-1,1)))
+    i_pred = i_model.predict(test_x, pred_fidelity=2, return_std=False)
+    r_pred = r_model.predict(test_x, pred_fidelity=2, return_std=False)
+    ground_truth = HF_function(test_x)
+    # xx, yy, i_pred, r_pred, ground_truth = xx.reshape(-1,lin_pts), yy.reshape(-1,lin_pts), i_pred.reshape(-1,lin_pts), r_pred.reshape(-1,lin_pts), ground_truth.reshape(-1,lin_pts)
+    i_pred, r_pred, ground_truth = i_pred.reshape(-1,lin_pts), r_pred.reshape(-1,lin_pts), ground_truth.reshape(-1,lin_pts)
+
+    current_palette = sns.color_palette("viridis", as_cmap=True)
+
     fig, ax = plt.subplots(dpi=300)
-    current_palette = sns.color_palette("Set2")
-    # current_palette = sns.color_palette()
-    ax.scatter(i_model.x[0], i_model.y[0], color=current_palette[0], label='Low-fidelity data')
-    ax.scatter(i_model.x[1], i_model.y[1], color=current_palette[1], label='Mid-fidelity data')
-    ax.scatter(i_model.x[2], i_model.y[2], color=current_palette[2], label='High-fidelity data')
+    contour1 = ax.contour(xx, yy, ground_truth, levels=np.linspace(0, 250, 11), colors='k', linewidths=1, linestyles='--', extend='both')  ## 등고선
+    contour2 = ax.contourf(xx, yy, ground_truth, levels=np.linspace(0, 250, 251), cmap=current_palette, extend='both')
+    ax.clabel(contour1, contour1.levels, inline=True)  ## contour 라벨 #0-250
+    fig.colorbar(contour2)
+    plt.show()
 
-    ax.plot(test_x, i_model.predict(test_x, pred_fidelity=0, return_std=False),
-            color=current_palette[0], label='Low-fidelity (IHK)', linestyle='--')
-    ax.plot(test_x, i_model.predict(test_x, pred_fidelity=1, return_std=False),
-            color=current_palette[1], label='Mid-fidelity (IHK)', linestyle='--')
-    ax.plot(test_x, i_model.predict(test_x, pred_fidelity=2, return_std=False),
-            color=current_palette[2], label='High-fidelity (IHK)', linestyle='--')
+    fig, ax = plt.subplots(dpi=300)
+    contour1 = ax.contour(xx, yy, i_pred, levels=np.linspace(0, 250, 11), colors='k', linewidths=1, linestyles='--', extend='both')  ## 등고선
+    contour2 = ax.contourf(xx, yy, i_pred, levels=np.linspace(0, 250, 251), cmap=current_palette, extend='both')
+    ax.clabel(contour1, contour1.levels, inline=True)  ## contour 라벨 #0-250
+    fig.colorbar(contour2)
+    plt.show()
 
-    ax.plot(test_x, r_model.predict(test_x, pred_fidelity=0, return_std=False),
-            color=current_palette[0], label='Low-fidelity (RHK)', linestyle='-')
-    ax.plot(test_x, r_model.predict(test_x, pred_fidelity=1, return_std=False),
-            color=current_palette[1], label='Mid-fidelity (RHK)', linestyle='-')
-    ax.plot(test_x, r_model.predict(test_x, pred_fidelity=2, return_std=False),
-            color=current_palette[2], label='High-fidelity (RHK)', linestyle='-')
+    fig, ax = plt.subplots(dpi=300)
+    contour1 = ax.contour(xx, yy, r_pred, levels=np.linspace(0, 250, 11), colors='k', linewidths=1, linestyles='--', extend='both')  ## 등고선
+    contour2 = ax.contourf(xx, yy, r_pred, levels=np.linspace(0, 250, 251), cmap=current_palette, extend='both')
+    ax.clabel(contour1, contour1.levels, inline=True)  ## contour 라벨
+    fig.colorbar(contour2)
+    plt.show()
 
-    ax.legend(fontsize=12, frameon=False, ncol=3, loc='lower center', bbox_to_anchor=(0.5, 1.0), columnspacing=0.4)
-    plt.tight_layout()
+    fig, ax = plt.subplots(dpi=300)
+    contour1 = ax.contour(xx, yy, np.abs(i_pred-ground_truth), levels=np.linspace(0, 30, 6), colors='k', linewidths=1, linestyles='--',
+                          extend='both')  ## 등고선
+    contour2 = ax.contourf(xx, yy, np.abs(i_pred-ground_truth), levels=np.linspace(0, 30, 251), cmap=current_palette, extend='both')
+    ax.clabel(contour1, contour1.levels, inline=True)  ## contour 라벨 #0-250
+    fig.colorbar(contour2)
+    plt.show()
+
+    fig, ax = plt.subplots(dpi=300)
+    contour1 = ax.contour(xx, yy, np.abs(r_pred-ground_truth), levels=np.linspace(0, 30, 6), colors='k', linewidths=1, linestyles='--',
+                          extend='both')  ## 등고선
+    contour2 = ax.contourf(xx, yy, np.abs(r_pred-ground_truth), levels=np.linspace(0, 30, 251), cmap=current_palette, extend='both')
+    ax.clabel(contour1, contour1.levels, inline=True)  ## contour 라벨
+    fig.colorbar(contour2)
     plt.show()

@@ -20,9 +20,9 @@ class HK:
 		# for each_y in self.y:
 		# 	each_y.reshape(-1)
 		if n_pop is None:
-			n_pop = [100] * len(x)
+			n_pop = [30] * len(x)
 		if n_gen is None:
-			n_gen = [100] * len(x)
+			n_gen = [30] * len(x)
 		self.pop, self.gen = np.array(n_pop), np.array(n_gen)
 		self.total_level = len(x)
 		self.current_level = 0
@@ -352,7 +352,7 @@ class HK:
 
 				res = minimize(problem,
 				               algorithm,
-				               ("n_gen", gen_size),
+				               # ("n_gen", gen_size),
 				               #  verbose=True,
 				               #  disply = MyDisplay()
 
@@ -362,7 +362,7 @@ class HK:
 				res = minimize(problem,
 				               algorithm,
 				               termination,
-				               ("n_gen", gen_size),
+				               # ("n_gen", gen_size),
 				               #  verbose=True,
 				               #  disply = MyDisplay()
 
@@ -408,7 +408,7 @@ class HK:
 
 				res = minimize(problem,
 				               algorithm,
-				               ("n_gen", gen_size),
+				               # ("n_gen", gen_size),
 				               #  verbose=True,
 				               #  disply = MyDisplay()
 
@@ -418,7 +418,7 @@ class HK:
 				res = minimize(problem,
 				               algorithm,
 				               termination,
-				               ("n_gen", gen_size),
+				               # ("n_gen", gen_size),
 				               #  verbose=True,
 				               #  disply = MyDisplay()
 
@@ -528,13 +528,13 @@ class HK:
 			res = minimize(problem,
 			               algorithm,
 			               termination,
-			               ("n_gen", gen_size)
+			               # ("n_gen", gen_size)
 			               #  verbose=True,
 			               )
 		else:
 			res = minimize(problem,
 			               algorithm,
-			               ("n_gen", gen_size)
+			               # ("n_gen", gen_size)
 			               #  verbose=True,
 
 			               )
