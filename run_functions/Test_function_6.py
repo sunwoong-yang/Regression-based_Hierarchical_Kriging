@@ -17,7 +17,7 @@ HF_y = HF_function(HF_x).reshape(-1, 1)
 test_x = lhs(in_dim, samples=100, criterion='maximin') * 1 + 2
 ground_truth = HF_function(test_x)
 
-IHK, RHK = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y])
+IHK, RHK = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y], history=True)
 i_pred = IHK.predict(test_x, return_std=False)
 r_pred = RHK.predict(test_x, return_std=False)
 

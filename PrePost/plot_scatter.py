@@ -11,6 +11,6 @@ def plot_scatter(ground_truth, i_pred, r_pred, title="Function 1"):
 	ax.plot(lims, lims, '--k')
 	ax.set_xlim(lims)
 	ax.set_ylim(lims)
-	ax.legend(fontsize=20)
+	ax.legend(fontsize=20, frameon=False)
 	ax.set_title(title, fontsize=20)
 	plt.show()

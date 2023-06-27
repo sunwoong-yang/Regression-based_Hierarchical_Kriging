@@ -2,6 +2,7 @@ from surrogate_model.HK_functions import *
 
 from pymoo.algorithms.soo.nonconvex.ga import GA
 from pymoo.optimize import minimize
+from pymoo.termination.robust import RobustTermination
 from pymoo.termination.xtol import DesignSpaceTermination
 from pymoo.factory import get_sampling, get_crossover, get_mutation
 from pymoo.operators.mutation.pm import PM
@@ -357,7 +358,7 @@ class HK:
 
 				               )
 			elif fixed_gen == 0:
-				termination = DesignSpaceTermination(tol=10 ** -4)
+				termination = RobustTermination(DesignSpaceTermination(tol=10**-4), period=10)
 				res = minimize(problem,
 				               algorithm,
 				               termination,
@@ -413,7 +414,7 @@ class HK:
 
 				               )
 			elif fixed_gen == 0:
-				termination = DesignSpaceTermination(tol=10 ** -4)
+				termination = RobustTermination(DesignSpaceTermination(tol=10**-4), period=10)
 				res = minimize(problem,
 				               algorithm,
 				               termination,
@@ -522,7 +523,7 @@ class HK:
 			               eliminate_duplicates=True
 			               )
 		if VALorEI != "VFEI":  # VFEI가 아닐 때
-			termination = DesignSpaceTermination(tol=10 ** -4)
+			termination = RobustTermination(DesignSpaceTermination(tol=10**-4), period=10)
 
 			res = minimize(problem,
 			               algorithm,
