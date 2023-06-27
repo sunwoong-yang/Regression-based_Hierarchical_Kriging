@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 """
 3 level Branin function can be found here
@@ -27,4 +29,28 @@ def scaling_x(x):
 
     return x
 
+def plot_Branin(test_x, ground_truth, i_model, r_model):
+    fig, ax = plt.subplots(dpi=300)
+    current_palette = sns.color_palette("Set2")
+    # current_palette = sns.color_palette()
+    ax.scatter(i_model.x[0], i_model.y[0], color=current_palette[0], label='Low-fidelity data')
+    ax.scatter(i_model.x[1], i_model.y[1], color=current_palette[1], label='Mid-fidelity data')
+    ax.scatter(i_model.x[2], i_model.y[2], color=current_palette[2], label='High-fidelity data')
 
+    ax.plot(test_x, i_model.predict(test_x, pred_fidelity=0, return_std=False),
+            color=current_palette[0], label='Low-fidelity (IHK)', linestyle='--')
+    ax.plot(test_x, i_model.predict(test_x, pred_fidelity=1, return_std=False),
+            color=current_palette[1], label='Mid-fidelity (IHK)', linestyle='--')
+    ax.plot(test_x, i_model.predict(test_x, pred_fidelity=2, return_std=False),
+            color=current_palette[2], label='High-fidelity (IHK)', linestyle='--')
+
+    ax.plot(test_x, r_model.predict(test_x, pred_fidelity=0, return_std=False),
+            color=current_palette[0], label='Low-fidelity (RHK)', linestyle='-')
+    ax.plot(test_x, r_model.predict(test_x, pred_fidelity=1, return_std=False),
+            color=current_palette[1], label='Mid-fidelity (RHK)', linestyle='-')
+    ax.plot(test_x, r_model.predict(test_x, pred_fidelity=2, return_std=False),
+            color=current_palette[2], label='High-fidelity (RHK)', linestyle='-')
+
+    ax.legend(fontsize=12, frameon=False, ncol=3, loc='lower center', bbox_to_anchor=(0.5, 1.0), columnspacing=0.4)
+    plt.tight_layout()
+    plt.show()

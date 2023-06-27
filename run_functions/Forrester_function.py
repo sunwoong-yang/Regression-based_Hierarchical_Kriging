@@ -2,7 +2,7 @@ from functions.Forrester_function import *
 from run_functions.train_models import train_models
 from PrePost.plot_scatter import plot_scatter
 from PrePost.cal_error import cal_error
-import matplotlib.pyplot as plt
+import numpy as np
 
 in_dim = 1
 
@@ -13,7 +13,7 @@ LF_x = np.linspace(0, 1, 21).reshape(-1,1)
 MF_x = np.linspace(0, 1, 8).reshape(-1,1)
 HF_x = np.array([0, 0.4, 0.6, 1]).reshape(-1,1)
 
-LF_y = LF_function(LF_x).reshape(-1, 1)
+LF_y = LF_function(LF_x).reshape(-1, 1)  * np.random.normal(loc=1, scale=0.3, size=(len(LF_x),1))
 MF_y = MF_function(MF_x).reshape(-1, 1)
 HF_y = HF_function(HF_x).reshape(-1, 1)
 
