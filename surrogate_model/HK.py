@@ -1,5 +1,6 @@
 from surrogate_model.HK_functions import *
 from PrePost.PrePost import normalize_multifidelity
+
 from pymoo.algorithms.soo.nonconvex.ga import GA
 from pymoo.optimize import minimize
 from pymoo.termination.robust import RobustTermination
@@ -37,7 +38,7 @@ class HK:
 			print("Invalid HK type")
 
 	###################################
-	def fit(self, history=False, to_level=None):
+	def fit(self, history=False, to_level=None, rand_seed=None):
 		if to_level is None:  # to_level 입력안되면 모든 fidelity 학습
 			to_level = self.total_level - 1
 
@@ -48,7 +49,7 @@ class HK:
 			x, y = self.x[self.current_level], self.y[self.current_level]
 
 			self.opt_bef_action()
-			self.GA_results = self.GA_krig(self.current_level)
+			self.GA_results = self.GA_krig(self.current_level, rand_seed=rand_seed)
 			self.opt_X = self.GA_results[0]
 			self.opt_aft_action(x, y, self.opt_X)
 
@@ -291,7 +292,7 @@ class HK:
 			return y, np.sqrt((MSE)), MLE
 
 	###################################
-	def GA_krig(self, current_level):
+	def GA_krig(self, current_level, rand_seed=None):
 		n_var = self.x[current_level].shape[1]
 		pop_size = self.pop[current_level]
 		gen_size = self.gen[current_level]
@@ -355,6 +356,7 @@ class HK:
 
 				res = minimize(problem,
 				               algorithm,
+				               seed=rand_seed,
 				               # ("n_gen", gen_size),
 				               #  verbose=True,
 				               #  disply = MyDisplay()
@@ -365,6 +367,7 @@ class HK:
 				res = minimize(problem,
 				               algorithm,
 				               termination,
+				               seed=rand_seed,
 				               # ("n_gen", gen_size),
 				               #  verbose=True,
 				               #  disply = MyDisplay()
@@ -411,6 +414,7 @@ class HK:
 
 				res = minimize(problem,
 				               algorithm,
+				               seed=rand_seed,
 				               # ("n_gen", gen_size),
 				               #  verbose=True,
 				               #  disply = MyDisplay()
@@ -421,6 +425,7 @@ class HK:
 				res = minimize(problem,
 				               algorithm,
 				               termination,
+				               seed=rand_seed,
 				               # ("n_gen", gen_size),
 				               #  verbose=True,
 				               #  disply = MyDisplay()
@@ -432,7 +437,7 @@ class HK:
 			return opt, res.F, res.algorithm.n_gen
 
 	###################################
-	def opt_on_surrogate(self, xl, xu, pop, gen, current_level, VALorEI, morM="M"):
+	def opt_on_surrogate(self, xl, xu, pop, gen, current_level, VALorEI, morM="M", rand_seed=None):
 		# morM : y값을 최소화면 "m" 최대화면 "M"
 		# VALorEI : 함수값 최적화면 "VAL" EI 최적화면 "EI" VFEI 최적화면 "VFEI"
 		n_var = self.x[current_level].shape[1]
@@ -531,12 +536,14 @@ class HK:
 			res = minimize(problem,
 			               algorithm,
 			               termination,
+			               seed=rand_seed,
 			               # ("n_gen", gen_size)
 			               #  verbose=True,
 			               )
 		else:
 			res = minimize(problem,
 			               algorithm,
+			               seed=rand_seed,
 			               # ("n_gen", gen_size)
 			               #  verbose=True,
 
@@ -604,10 +611,18 @@ class HK:
 
 		return EI
 
+	def cal_error(self, x, y_real, level=None):
+		if level is None:
+			level = self.total_level - 1
+		rmse = self.RMSE(x, y_real, level)
+		mae = self.MAE(x, y_real, level)
+		rsq = self.Rsq(x, y_real, level)
+		return np.array([rmse, mae, rsq])
+
 	###################################
 	def Rsq(self, x, y_real, level):
-		y_pred = self.pred_y_MSE(x, level)[0]
-		correlation_matrix = np.corrcoef(y_pred, y_real)
+		y_pred = self.predict(x, level)[0]
+		correlation_matrix = np.corrcoef(y_pred, y_real.reshape(-1))
 		correlation_xy = correlation_matrix[0, 1]
 		return correlation_xy ** 2
 
