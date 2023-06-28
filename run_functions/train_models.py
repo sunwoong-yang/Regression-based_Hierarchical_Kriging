@@ -1,5 +1,6 @@
 from surrogate_model.HK import HK
 import numpy as np
+import copy
 
 def train_models(X, Y, add_noise=None, pop=30, gen=100, repetition=1, history=False, rand_seed=42, test_x=None, test_y=None):
 
@@ -18,12 +19,13 @@ def train_models(X, Y, add_noise=None, pop=30, gen=100, repetition=1, history=Fa
 		r_errors = np.zeros((repetition, 3))
 
 	for repeat in range(repetition):
+		y_noise = copy.deepcopy(Y)
 		for noise_fidelity, noise_scale in add_noise:
-			Y[noise_fidelity] *= np.random.normal(loc=1, scale=noise_scale, size=(len(Y[noise_fidelity]),1))
+			y_noise[noise_fidelity] *= np.random.normal(loc=1, scale=noise_scale, size=(len(y_noise[noise_fidelity]),1))
 
-		IHK = HK(x=X, y=Y, n_pop=[pop] * len(X), n_gen=[gen] * len(X), HKtype="i")
+		IHK = HK(x=X, y=y_noise, n_pop=[pop] * len(X), n_gen=[gen] * len(X), HKtype="i")
 		IHK.fit(history=history, rand_seed=HK_train_seed[repeat])
-		RHK = HK(x=X, y=Y, n_pop=[pop] * len(X), n_gen=[gen] * len(X), HKtype="r")
+		RHK = HK(x=X, y=y_noise, n_pop=[pop] * len(X), n_gen=[gen] * len(X), HKtype="r")
 		RHK.fit(history=history, rand_seed=HK_train_seed[repeat])
 
 		IHKs.append(IHK)

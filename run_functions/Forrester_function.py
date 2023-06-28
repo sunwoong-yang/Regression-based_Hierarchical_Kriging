@@ -22,21 +22,20 @@ test_x = np.linspace(0, 1, 100).reshape(-1, 1)
 ground_truth = HF_function(test_x)
 
 
-IHKs, RHKs, i_errors, r_errors = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y], test_x=test_x, test_y=ground_truth,
-                          history=False, repetition=3, add_noise=[[0, 0.3]])
+IHKs, RHKs, i_errors, r_errors = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
+                                              test_x=test_x, test_y=ground_truth,
+                                              history=False, repetition=30, add_noise=[[0, 0.2], [1, 0.1]], rand_seed=42)
 print(i_errors)
 print("********************")
 print(r_errors)
-# i_pred = IHK.predict(test_x, return_std=False)
-# r_pred = RHK.predict(test_x, return_std=False)
-#
-# plot_scatter(ground_truth, i_pred, r_pred, title="Forrester function")
-#
-# i_error, r_error = cal_error(ground_truth, i_pred, r_pred)
-# print("IHK error: ", i_error)
-# print("RHK error: ", r_error)
-#
-# plot_Forrester(test_x, ground_truth, IHK, RHK)
+np.save("../error_functions/IHK_Forrester.npy", i_errors)
+np.save("../error_functions/RHK_Forrester.npy", r_errors)
+
+i_pred = IHKs[0].predict(test_x, return_std=False)
+r_pred = RHKs[0].predict(test_x, return_std=False)
+
+plot_scatter(ground_truth, i_pred, r_pred, title="Forrester function")
+plot_Forrester(test_x, ground_truth, IHKs[2], RHKs[2])
 
 #########################################################################################################
 
