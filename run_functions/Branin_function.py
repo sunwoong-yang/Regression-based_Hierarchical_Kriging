@@ -7,13 +7,13 @@ from pyDOE import lhs
 
 in_dim = 2
 
-# LF_x = scaling_x(lhs(in_dim, samples=80, criterion='maximin'))
-# MF_x = scaling_x(lhs(in_dim, samples=40, criterion='maximin'))
-# HF_x = scaling_x(lhs(in_dim, samples=20, criterion='maximin'))
+LF_x = scaling_x(lhs(in_dim, samples=150, criterion='maximin'))
+MF_x = scaling_x(lhs(in_dim, samples=100, criterion='maximin'))
+HF_x = scaling_x(lhs(in_dim, samples=50, criterion='maximin'))
 
-LF_x = scaling_x(uniform(in_dim, n_pts=200))
-MF_x = scaling_x(uniform(in_dim, n_pts=40))
-HF_x = scaling_x(uniform(in_dim, n_pts=20))
+# LF_x = scaling_x(uniform(in_dim, n_pts=200))
+# MF_x = scaling_x(uniform(in_dim, n_pts=40))
+# HF_x = scaling_x(uniform(in_dim, n_pts=20))
 
 
 LF_y = LF_function(LF_x).reshape(-1, 1)

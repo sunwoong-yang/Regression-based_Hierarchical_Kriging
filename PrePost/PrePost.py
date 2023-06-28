@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import pandas as pd
 from torch.utils.data import TensorDataset, DataLoader
-from sklearn.preprocessing import StandardScaler as Scaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 def Dat2Ten(dataloader):
     x_total, y_total = [], []
@@ -68,7 +68,22 @@ def csv2Num(N_inp, dir="DOEset1.csv", mini_batch = None):
     H_inp, H_out, inp_dataset, out_dataset =  read_csv(N_inp, dir)
     return H_inp, H_out, inp_dataset, out_dataset
 
-def normalize(data):
-    STD = Scaler()
-    scaled_data = STD.fit_transform(data)
-    return scaled_data, STD
+def normalize_multifidelity(data, minmax = True, Scaler=None): # for multi-fidelity data
+
+    if Scaler is not None:  # When "Scaler" is given, transform "data" using it
+        scaled_data = Scaler.transform(data)
+        return scaled_data
+
+    else: # When "Scaler" is not given, define new Scaler
+        scaled_data_list, Scaler_list = [], []
+        for x in data: # for loop since "data" is the list of the multi-fidelity data
+            if minmax: # When "Scaler" is not given, define new Scaler (MinMaxScaler in this case)
+                Scaler = MinMaxScaler()
+                scaled_data = Scaler.fit_transform(x)
+            else: # When "Scaler" is not given, define new Scaler (StandardScaler in this case)
+                Scaler = StandardScaler()
+                scaled_data = Scaler.fit_transform(x)
+            scaled_data_list.append(scaled_data)
+            Scaler_list.append(Scaler)
+
+        return scaled_data_list, Scaler_list, data
