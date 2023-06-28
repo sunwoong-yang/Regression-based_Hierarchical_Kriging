@@ -52,6 +52,7 @@ def plot_Branin(i_model, r_model, HF_function):
     fig, ax = plt.subplots(dpi=300)
     contour1 = ax.contour(xx, yy, i_pred, levels=np.linspace(0, 250, 11), colors='k', linewidths=1, linestyles='--', extend='both')  ## 등고선
     contour2 = ax.contourf(xx, yy, i_pred, levels=np.linspace(0, 250, 251), cmap=current_palette, extend='both')
+    ax.scatter(i_model.x[0][:,0], i_model.x[0][:,1], color='r')
     ax.clabel(contour1, contour1.levels, inline=True)  ## contour 라벨 #0-250
     fig.colorbar(contour2)
     plt.show()
@@ -59,6 +60,7 @@ def plot_Branin(i_model, r_model, HF_function):
     fig, ax = plt.subplots(dpi=300)
     contour1 = ax.contour(xx, yy, r_pred, levels=np.linspace(0, 250, 11), colors='k', linewidths=1, linestyles='--', extend='both')  ## 등고선
     contour2 = ax.contourf(xx, yy, r_pred, levels=np.linspace(0, 250, 251), cmap=current_palette, extend='both')
+    ax.scatter(i_model.x[0][:, 0], i_model.x[0][:, 1], color='r')
     ax.clabel(contour1, contour1.levels, inline=True)  ## contour 라벨
     fig.colorbar(contour2)
     plt.show()
