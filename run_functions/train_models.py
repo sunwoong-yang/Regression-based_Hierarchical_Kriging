@@ -5,7 +5,7 @@ import copy
 def train_models(X, Y, add_noise=None, pop=30, gen=100, repetition=1, history=False, rand_seed=42, test_x=None, test_y=None):
 
 	if add_noise is None:
-		add_noise = [[0, 0.]] # Default noise: add std=0. Gaussian noise to the lowest fidelity output
+		add_noise = [[0, 0.2], [1, 0.1]] # Default noise: add std=0.2 Gaussian noise to the lowest fidelity output & std=0.1 to the mid fidelity output
 
 	np.random.seed(rand_seed)
 	# Use different random seed for training HK models for every repetitive training
