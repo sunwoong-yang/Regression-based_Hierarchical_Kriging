@@ -18,7 +18,7 @@ ground_truth = HF_function(test_x)
 
 IHKs, RHKs, i_errors, r_errors = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
                                               test_x=test_x, test_y=ground_truth,
-                                              history=False, repetition=30, add_noise=[[0, 0.2], [1, 0.1]], rand_seed=42)
+                                              history=False, repetition=30, add_noise=[[0, 0.4, 0.4], [1, 0.2, 0.2]], rand_seed=42)
 print(np.mean(i_errors, axis=0))
 print("********************")
 print(np.mean(r_errors, axis=0))

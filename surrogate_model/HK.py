@@ -59,6 +59,7 @@ class HK:
 
 			announce = "   Final generation = %s" % (self.GA_results[2])
 			announce += "\n   Optimal theta = %s" % (self.total_opt_theta[self.current_level])
+			announce += "\n   Optimal beta = %s" % (self.total_beta[self.current_level])
 			if self.HKtype == ("r" or "R"):
 				announce += "\n   Optimal nugget = %E" % (self.total_opt_nugget[self.current_level])
 			announce += "\n   Optimal likelihood = %f" % (self.total_MLE[self.current_level])

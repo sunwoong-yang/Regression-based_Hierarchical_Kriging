@@ -5,7 +5,7 @@ import copy
 def train_models(X, Y, add_noise=None, pop=30, gen=100, repetition=1, history=False, rand_seed=42, test_x=None, test_y=None):
 
 	if add_noise is None:
-		add_noise = [[0, 0.2], [1, 0.1]] # Default noise: add std=0.2 Gaussian noise to the lowest fidelity output & std=0.1 to the mid fidelity output
+		add_noise = [[0, 0.2, 0.2], [1, 0.1, 0.1]] # Default noise: add std=0.2 Gaussian noise to the lowest fidelity output & std=0.1 to the mid fidelity output
 
 	np.random.seed(rand_seed)
 	# Use different random seed for training HK models for every repetitive training
@@ -20,8 +20,9 @@ def train_models(X, Y, add_noise=None, pop=30, gen=100, repetition=1, history=Fa
 
 	for repeat in range(repetition):
 		y_noise = copy.deepcopy(Y)
-		for noise_fidelity, noise_scale in add_noise:
-			y_noise[noise_fidelity] *= np.random.normal(loc=1, scale=noise_scale, size=(len(y_noise[noise_fidelity]),1))
+		for noise_fidelity, noise_multiply, noise_add in add_noise:
+			y_noise[noise_fidelity] *= np.random.normal(loc=1, scale=noise_multiply, size=(len(y_noise[noise_fidelity]),1))
+			y_noise[noise_fidelity] += np.random.normal(loc=0, scale=noise_add, size=(len(y_noise[noise_fidelity]), 1))
 
 		IHK = HK(x=X, y=y_noise, n_pop=[pop] * len(X), n_gen=[gen] * len(X), HKtype="i")
 		IHK.fit(history=history, rand_seed=HK_train_seed[repeat])
