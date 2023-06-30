@@ -14,17 +14,17 @@ IHK_Func2 = np.load("../error_functions/IHK_Func2.npy", )
 RHK_Func2 = np.load("../error_functions/RHK_Func2.npy", )
 IHK_Func3 = np.load("../error_functions/IHK_Func3.npy", )
 RHK_Func3 = np.load("../error_functions/RHK_Func3.npy", )
-IHK_Func4 = np.load("../error_functions/IHK_Func4.npy", )
-RHK_Func4 = np.load("../error_functions/RHK_Func4.npy", )
+IHK_Func4 = np.load("../error_functions/IHK_Func3.npy", )
+RHK_Func4 = np.load("../error_functions/RHK_Func3.npy", )
 IHK_Func5 = np.load("../error_functions/IHK_Func3.npy", )
 RHK_Func5 = np.load("../error_functions/RHK_Func3.npy", )
 IHK_Func6 = np.load("../error_functions/IHK_Func3.npy", )
 RHK_Func6 = np.load("../error_functions/RHK_Func3.npy", )
 
 func_set = ["Forrester", "Branin", "Func1", "Func2", "Func3", "Func4", "Func5", "Func6"]
-function_name = np.array([i for i in func_set for j in range(30) ]).reshape(-1,1)
+function_name = np.array([i for i in func_set for j in range(15) ]).reshape(-1,1)
 function_name = np.vstack((function_name, function_name))
-IorR_name = np.array([i for i in ["IHK", "RHK"] for j in range(30*len(func_set))]).reshape(-1,1)
+IorR_name = np.array([i for i in ["IHK", "RHK"] for j in range(15*len(func_set))]).reshape(-1,1)
 
 i = 0
 IHK_rmse = np.vstack((IHK_Forrester[:,[i]], IHK_Branin[:,[i]], IHK_Func1[:,[i]], IHK_Func2[:,[i]], IHK_Func3[:,[i]], IHK_Func4[:,[i]], IHK_Func5[:,[i]], IHK_Func6[:,[i]]))

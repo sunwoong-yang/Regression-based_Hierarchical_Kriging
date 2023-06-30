@@ -11,7 +11,6 @@ MF_x = lhs(in_dim, samples=150, criterion='maximin') * 1 + 2
 HF_x = lhs(in_dim, samples=100, criterion='maximin') * 1 + 2
 
 LF_y = LF_function(LF_x).reshape(-1, 1)
-LF_y *= np.random.normal(loc=1, scale=0.3, size=(len(LF_x),1))
 MF_y = MF_function(MF_x).reshape(-1, 1)
 HF_y = HF_function(HF_x).reshape(-1, 1)
 
@@ -20,7 +19,7 @@ ground_truth = HF_function(test_x)
 
 IHKs, RHKs, i_errors, r_errors = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
                                               test_x=test_x, test_y=ground_truth,
-                                              history=False, repetition=10, add_noise=[[0, 0.4, 0.4], [1, 0.2, 0.2]], rand_seed=42)
+                                              history=False, repetition=15, add_noise=[[0, 0.4, 1.0], [1, 0.2, 0.5]], rand_seed=42)
 print(np.mean(i_errors, axis=0))
 print("********************")
 print(np.mean(r_errors, axis=0))

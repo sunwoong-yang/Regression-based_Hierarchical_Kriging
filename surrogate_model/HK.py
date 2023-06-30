@@ -631,10 +631,12 @@ class HK:
 	def RMSE(self, x, y_real, level):
 		y_pred = self.predict(x, level)[0]
 		ans = np.sqrt((np.sum((y_pred - y_real) ** 2)) / y_real.shape[0])
+		# ans = np.sqrt(np.sum((y_real - y_pred) ** 2) / len(y_real)) / np.mean(y_real)  # NRMSE
 		return ans
 
 	###################################
 	def MAE(self, x, y_real, level):
 		y_pred = self.predict(x, level)[0]
 		ans = np.sum(np.abs(y_pred - y_real)) / y_real.shape[0]
+		# ans = np.sum(np.abs((y_pred - y_real) / y_real)) / len(y_real)  # MAPE
 		return ans

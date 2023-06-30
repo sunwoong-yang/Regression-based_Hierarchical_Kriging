@@ -6,8 +6,8 @@ from pyDOE import lhs
 in_dim = 1
 
 LF_x = lhs(in_dim, samples=80, criterion='maximin')
-MF_x = lhs(in_dim, samples=60, criterion='maximin')
-HF_x = lhs(in_dim, samples=40, criterion='maximin')
+MF_x = lhs(in_dim, samples=40, criterion='maximin')
+HF_x = lhs(in_dim, samples=20, criterion='maximin')
 
 LF_y = LF_function(LF_x).reshape(-1, 1)
 MF_y = MF_function(MF_x).reshape(-1, 1)
@@ -18,7 +18,7 @@ ground_truth = HF_function(test_x)
 
 IHKs, RHKs, i_errors, r_errors = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
                                               test_x=test_x, test_y=ground_truth,
-                                              history=False, repetition=30, add_noise=[[0, 0.4, 0.4], [1, 0.2, 0.2]], rand_seed=42)
+                                              history=False, repetition=15, add_noise=[[0, 0.4, 0.06], [1, 0.2, 0.03]], rand_seed=42)
 print(np.mean(i_errors, axis=0))
 print("********************")
 print(np.mean(r_errors, axis=0))

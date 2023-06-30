@@ -27,11 +27,11 @@ ground_truth = HF_function(test_x)
 
 IHKs, RHKs, i_errors, r_errors = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
                                               test_x=test_x, test_y=ground_truth,
-                                              history=False, repetition=30, add_noise=[[0, 0.2], [1, 0.1]], rand_seed=42)
+                                              history=False, repetition=15, add_noise=[[0, 0.4, 4.5], [1, 0.2, 2.25]], rand_seed=42)
 
-print(i_errors)
+print(np.mean(i_errors, axis=0))
 print("********************")
-print(r_errors)
+print(np.mean(r_errors, axis=0))
 np.save("../error_functions/IHK_Branin.npy", i_errors)
 np.save("../error_functions/RHK_Branin.npy", r_errors)
 
