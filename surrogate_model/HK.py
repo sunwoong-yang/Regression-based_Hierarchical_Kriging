@@ -3,8 +3,11 @@ from PrePost.PrePost import normalize_multifidelity
 
 from pymoo.algorithms.soo.nonconvex.ga import GA
 from pymoo.optimize import minimize
+from pymoo.core.termination import TerminateIfAny
 from pymoo.termination.robust import RobustTermination
 from pymoo.termination.xtol import DesignSpaceTermination
+from pymoo.termination.ftol import SingleObjectiveSpaceTermination
+from pymoo.termination.max_gen import MaximumGenerationTermination
 from pymoo.factory import get_sampling, get_crossover, get_mutation
 from pymoo.operators.mutation.pm import PM
 from pymoo.core.problem import ElementwiseProblem
@@ -364,7 +367,9 @@ class HK:
 
 				               )
 			elif fixed_gen == 0:
-				termination = RobustTermination(DesignSpaceTermination(tol=10**-2), period=5)
+				# termination = RobustTermination(DesignSpaceTermination(tol=10**-2), period=5)
+				# termination = MaximumGenerationTermination(n_max_gen=150)
+				termination = TerminateIfAny(RobustTermination(DesignSpaceTermination(tol=10**-2), period=5), MaximumGenerationTermination(n_max_gen=100))
 				res = minimize(problem,
 				               algorithm,
 				               termination,
@@ -422,7 +427,9 @@ class HK:
 
 				               )
 			elif fixed_gen == 0:
-				termination = RobustTermination(DesignSpaceTermination(tol=10**-4), period=5)
+				# termination = RobustTermination(DesignSpaceTermination(tol=10**-4), period=5)
+				# termination = MaximumGenerationTermination(n_max_gen=150)
+				termination = TerminateIfAny(RobustTermination(DesignSpaceTermination(tol=10**-2), period=5), MaximumGenerationTermination(n_max_gen=100))
 				res = minimize(problem,
 				               algorithm,
 				               termination,
@@ -532,7 +539,9 @@ class HK:
 			               eliminate_duplicates=True
 			               )
 		if VALorEI != "VFEI":  # VFEI가 아닐 때
-			termination = RobustTermination(DesignSpaceTermination(tol=10**-4), period=5)
+			# termination = RobustTermination(DesignSpaceTermination(tol=10**-4), period=5)
+			# termination = MaximumGenerationTermination(n_max_gen=150)
+			termination = TerminateIfAny(RobustTermination(DesignSpaceTermination(tol=10**-2), period=5), MaximumGenerationTermination(n_max_gen=100))
 
 			res = minimize(problem,
 			               algorithm,

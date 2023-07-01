@@ -22,14 +22,20 @@ test_x = np.linspace(0, 1, 300).reshape(-1, 1)
 ground_truth = HF_function(test_x)
 
 
-IHKs, RHKs, i_errors, r_errors = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
+IHKs, RHKs, i_errors, r_errors, IHK_time, RHK_time = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
                                               test_x=test_x, test_y=ground_truth,
-                                              history=False, repetition=15, add_noise=[[0, 0.2, 0.44], [1, 0.1, 0.22]], rand_seed=42)
-print(np.mean(i_errors, axis=0))
+                                              history=False, repetition=15, add_noise=[[0, 0.2, 0.22], [1, 0.1, 0.11]], rand_seed=42)
+
+print("IHK error: ", np.mean(i_errors, axis=0))
+print("IHK time: ", np.sum(IHK_time))
 print("********************")
-print(np.mean(r_errors, axis=0))
+print("RHK error: ", np.mean(r_errors, axis=0))
+print("RHK time: ", np.sum(RHK_time))
+
 np.save("../error_functions/IHK_Forrester.npy", i_errors)
 np.save("../error_functions/RHK_Forrester.npy", r_errors)
+np.save("../time_functions/IHK_Forrester.npy", IHK_time)
+np.save("../time_functions/RHK_Forrester.npy", RHK_time)
 
 i_pred = IHKs[0].predict(test_x, return_std=False)
 r_pred = RHKs[0].predict(test_x, return_std=False)

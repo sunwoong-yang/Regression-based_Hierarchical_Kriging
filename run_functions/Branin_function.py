@@ -25,15 +25,20 @@ HF_y = HF_function(HF_x).reshape(-1, 1)
 test_x = scaling_x(lhs(in_dim, samples=300, criterion='maximin'))
 ground_truth = HF_function(test_x)
 
-IHKs, RHKs, i_errors, r_errors = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
+IHKs, RHKs, i_errors, r_errors, IHK_time, RHK_time = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
                                               test_x=test_x, test_y=ground_truth,
-                                              history=False, repetition=15, add_noise=[[0, 0.4, 4.5], [1, 0.2, 2.25]], rand_seed=42)
+                                              history=False, repetition=15, add_noise=[[0, 0.2, 2.25], [1, 0.1, 1.125]], rand_seed=42)
 
-print(np.mean(i_errors, axis=0))
+print("IHK error: ", np.mean(i_errors, axis=0))
+print("IHK time: ", np.sum(IHK_time))
 print("********************")
-print(np.mean(r_errors, axis=0))
+print("RHK error: ", np.mean(r_errors, axis=0))
+print("RHK time: ", np.sum(RHK_time))
+
 np.save("../error_functions/IHK_Branin.npy", i_errors)
 np.save("../error_functions/RHK_Branin.npy", r_errors)
+np.save("../time_functions/IHK_Branin.npy", IHK_time)
+np.save("../time_functions/RHK_Branin.npy", RHK_time)
 
 i_pred = IHKs[0].predict(test_x, return_std=False)
 r_pred = RHKs[0].predict(test_x, return_std=False)
