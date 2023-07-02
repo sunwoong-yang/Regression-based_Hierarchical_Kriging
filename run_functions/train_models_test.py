@@ -26,28 +26,28 @@ def train_models(X, Y, add_noise=None, pop=30, gen=100, repetition=1, history=Fa
 		for noise_fidelity, noise_multiply, noise_add in add_noise:
 			y_noise[noise_fidelity] *= np.random.normal(loc=1, scale=noise_multiply, size=(len(y_noise[noise_fidelity]),1))
 			y_noise[noise_fidelity] += np.random.normal(loc=0, scale=noise_add, size=(len(y_noise[noise_fidelity]), 1))
-
-		temp_time = time.time()
-		IHK = HK(x=X, y=y_noise, n_pop=[pop] * len(X), n_gen=[gen] * len(X), HKtype="i")
-		IHK.fit(history=history, rand_seed=HK_train_seed[repeat])
-		IHK_time_ = time.time()-temp_time
-
-		temp_time = time.time()
-		RHK = HK(x=X, y=y_noise, n_pop=[pop] * len(X), n_gen=[gen] * len(X), HKtype="r")
-		RHK.fit(history=history, rand_seed=HK_train_seed[repeat])
-		RHK_time_ = time.time() - temp_time
-
-		IHKs.append(IHK)
-		RHKs.append(RHK)
-		IHK_time.append(IHK_time_)
-		RHK_time.append(RHK_time_)
-		IHK_likeli[repeat] = IHK.total_MLE
-		RHK_likeli[repeat] = RHK.total_MLE
-
-		if (test_x is not None) and (test_y is not None):
-			i_errors[repeat] = IHK.cal_error(test_x, test_y)
-			r_errors[repeat] = RHK.cal_error(test_x, test_y)
-		print(f"{repeat + 1}th IHK time: {IHK_time_ / 60:.3f} m & error: {i_errors[repeat]}")
-		print(f"{repeat + 1}th RHK time: {RHK_time_ / 60:.3f} m & error: {r_errors[repeat]}")
-		print(IHK.total_MLE, RHK.total_MLE)
-	return IHKs, RHKs, i_errors, r_errors, IHK_likeli, RHK_likeli, np.array(IHK_time), np.array(RHK_time)
+			# print(repeat, np.max(np.random.normal(loc=1, scale=noise_multiply, size=(len(y_noise[noise_fidelity]),1))), np.max(np.random.normal(loc=0, scale=noise_add, size=(len(y_noise[noise_fidelity]), 1))))
+	# 	temp_time = time.time()
+	# 	IHK = HK(x=X, y=y_noise, n_pop=[pop] * len(X), n_gen=[gen] * len(X), HKtype="i")
+	# 	IHK.fit(history=history, rand_seed=HK_train_seed[repeat])
+	# 	IHK_time_ = time.time()-temp_time
+	#
+	# 	temp_time = time.time()
+	# 	RHK = HK(x=X, y=y_noise, n_pop=[pop] * len(X), n_gen=[gen] * len(X), HKtype="r")
+	# 	RHK.fit(history=history, rand_seed=HK_train_seed[repeat])
+	# 	RHK_time_ = time.time() - temp_time
+	#
+	# 	IHKs.append(IHK)
+	# 	RHKs.append(RHK)
+	# 	IHK_time.append(IHK_time_)
+	# 	RHK_time.append(RHK_time_)
+	# 	IHK_likeli[repeat] = IHK.total_MLE
+	# 	RHK_likeli[repeat] = RHK.total_MLE
+	#
+	# 	if (test_x is not None) and (test_y is not None):
+	# 		i_errors[repeat] = IHK.cal_error(test_x, test_y)
+	# 		r_errors[repeat] = RHK.cal_error(test_x, test_y)
+	# 	print(f"{repeat + 1}th IHK time: {IHK_time_ / 60:.3f} m & error: {i_errors[repeat]}")
+	# 	print(f"{repeat + 1}th RHK time: {RHK_time_ / 60:.3f} m & error: {r_errors[repeat]}")
+	# 	print(IHK.total_MLE, RHK.total_MLE)
+	# return IHKs, RHKs, i_errors, r_errors, IHK_likeli, RHK_likeli, np.array(IHK_time), np.array(RHK_time)

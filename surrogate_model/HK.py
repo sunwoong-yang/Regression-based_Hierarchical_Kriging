@@ -369,7 +369,7 @@ class HK:
 			elif fixed_gen == 0:
 				# termination = RobustTermination(DesignSpaceTermination(tol=10**-2), period=5)
 				# termination = MaximumGenerationTermination(n_max_gen=150)
-				termination = TerminateIfAny(RobustTermination(DesignSpaceTermination(tol=10**-2), period=5), MaximumGenerationTermination(n_max_gen=100))
+				termination = TerminateIfAny(RobustTermination(DesignSpaceTermination(tol=10**-2), period=10), MaximumGenerationTermination(n_max_gen=100))
 				res = minimize(problem,
 				               algorithm,
 				               termination,
@@ -393,7 +393,7 @@ class HK:
 					                 n_obj=1,
 					                 n_constr=0,
 					                 xl=np.array([-6.] * n_var + [-12.]),  # cubit spline --> 변수개수 + nugget
-					                 xu=np.array([3.] * n_var + [-6.]),
+					                 xu=np.array([3.] * n_var + [-3.]),
 
 					                 )
 
@@ -429,7 +429,7 @@ class HK:
 			elif fixed_gen == 0:
 				# termination = RobustTermination(DesignSpaceTermination(tol=10**-4), period=5)
 				# termination = MaximumGenerationTermination(n_max_gen=150)
-				termination = TerminateIfAny(RobustTermination(DesignSpaceTermination(tol=10**-2), period=5), MaximumGenerationTermination(n_max_gen=100))
+				termination = TerminateIfAny(RobustTermination(DesignSpaceTermination(tol=10**-2), period=10), MaximumGenerationTermination(n_max_gen=100))
 				res = minimize(problem,
 				               algorithm,
 				               termination,
@@ -541,7 +541,7 @@ class HK:
 		if VALorEI != "VFEI":  # VFEI가 아닐 때
 			# termination = RobustTermination(DesignSpaceTermination(tol=10**-4), period=5)
 			# termination = MaximumGenerationTermination(n_max_gen=150)
-			termination = TerminateIfAny(RobustTermination(DesignSpaceTermination(tol=10**-2), period=5), MaximumGenerationTermination(n_max_gen=100))
+			termination = TerminateIfAny(RobustTermination(DesignSpaceTermination(tol=10**-2), period=10), MaximumGenerationTermination(n_max_gen=100))
 
 			res = minimize(problem,
 			               algorithm,

@@ -6,7 +6,7 @@ from PrePost.cal_error import cal_error
 import numpy as np
 
 in_dim = 1
-
+function_name = "Forrester"
 # LF_x = lhs(in_dim, samples=80, criterion='maximin')
 # MF_x = lhs(in_dim, samples=40, criterion='maximin')
 # HF_x = lhs(in_dim, samples=20, criterion='maximin')
@@ -22,20 +22,24 @@ test_x = np.linspace(0, 1, 300).reshape(-1, 1)
 ground_truth = HF_function(test_x)
 
 
-IHKs, RHKs, i_errors, r_errors, IHK_time, RHK_time = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
+IHKs, RHKs, i_errors, r_errors, IHK_likeli, RHK_likeli, IHK_time, RHK_time = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
                                               test_x=test_x, test_y=ground_truth,
                                               history=False, repetition=15, add_noise=[[0, 0.2, 0.22], [1, 0.1, 0.11]], rand_seed=42)
 
+print("IHK likelihood: ", np.mean(IHK_likeli, axis=0))
 print("IHK error: ", np.mean(i_errors, axis=0))
 print("IHK time: ", np.sum(IHK_time))
 print("********************")
+print("RHK likelihood: ", np.mean(RHK_likeli, axis=0))
 print("RHK error: ", np.mean(r_errors, axis=0))
 print("RHK time: ", np.sum(RHK_time))
 
-np.save("../error_functions/IHK_Forrester.npy", i_errors)
-np.save("../error_functions/RHK_Forrester.npy", r_errors)
-np.save("../time_functions/IHK_Forrester.npy", IHK_time)
-np.save("../time_functions/RHK_Forrester.npy", RHK_time)
+np.save(f"../results_functions/likeli/IHK_{function_name}.npy", IHK_likeli)
+np.save(f"../results_functions/likeli/RHK_{function_name}.npy", RHK_likeli)
+np.save(f"../results_functions/error/IHK_{function_name}.npy", i_errors)
+np.save(f"../results_functions/error/RHK_{function_name}.npy", r_errors)
+np.save(f"../results_functions/time/IHK_{function_name}.npy", IHK_time)
+np.save(f"../results_functions/time/RHK_{function_name}.npy", RHK_time)
 
 i_pred = IHKs[0].predict(test_x, return_std=False)
 r_pred = RHKs[0].predict(test_x, return_std=False)
