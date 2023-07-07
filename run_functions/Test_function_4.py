@@ -20,7 +20,7 @@ ground_truth = HF_function(test_x)
 
 IHKs, RHKs, i_errors, r_errors, IHK_likeli, RHK_likeli, IHK_time, RHK_time = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
                                               test_x=test_x, test_y=ground_truth,
-                                              history=False, repetition=15, add_noise=[[0, 0.2, 0.11], [1, 0.1, 0.055]], rand_seed=42)
+                                              history=True, repetition=15, add_noise=[[0, 0.2, 0.11], [1, 0.1, 0.055]], rand_seed=42)
 
 print("IHK likelihood: ", np.mean(IHK_likeli, axis=0))
 print("IHK error: ", np.mean(i_errors, axis=0))
