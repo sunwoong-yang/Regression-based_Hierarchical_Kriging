@@ -9,9 +9,9 @@ in_dim = 2
 function_name = "Camel"
 
 np.random.seed(42)
-LF_x = scaling_x(lhs(in_dim, samples=80, criterion='maximin'))
+LF_x = scaling_x(lhs(in_dim, samples=100, criterion='maximin'))
 MF_x = scaling_x(lhs(in_dim, samples=50, criterion='maximin'))
-HF_x = scaling_x(lhs(in_dim, samples=25, criterion='maximin'))
+HF_x = scaling_x(lhs(in_dim, samples=20, criterion='maximin'))
 
 # LF_x = scaling_x(uniform(in_dim, n_pts=150))
 # MF_x = scaling_x(uniform(in_dim, n_pts=100))
