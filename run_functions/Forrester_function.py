@@ -1,7 +1,6 @@
 from functions.Forrester_function import *
 from run_functions.train_models import train_models
 from PrePost.plot_scatter import plot_scatter
-from PrePost.cal_error import cal_error
 
 import numpy as np
 
@@ -45,7 +44,9 @@ i_pred = IHKs[0].predict(test_x, return_std=False)
 r_pred = RHKs[0].predict(test_x, return_std=False)
 
 plot_scatter(ground_truth, i_pred, r_pred, title="Forrester function")
-plot_Forrester(test_x, ground_truth, IHKs[2], RHKs[2])
+ax = plot_Forrester(test_x, ground_truth, IHKs[4], RHKs[4])
+ax.figure.savefig("../results_functions/Forrester_pedagogical.png")
+
 
 #########################################################################################################
 
