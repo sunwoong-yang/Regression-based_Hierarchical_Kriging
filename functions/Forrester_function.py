@@ -9,7 +9,8 @@ Ha, H., Oh, S., & Yee, K. (2014). Feasibility study of hierarchical kriging mode
 """
 
 def LF_function(x):
-    return 0.2 * MF_function(x) + 5 * np.sin(x)
+    return 0.2 * MF_function(x) + 10 * x
+    # return 0.2 * MF_function(x) + 5 * np.sin(x)
 
 def MF_function(x):
     return 0.5 * HF_function(x) + 10 * (x - 0.5) - 5
@@ -25,9 +26,9 @@ def plot_Forrester(test_x, ground_truth, i_model, r_model):
     ax.plot(test_x, ground_truth, color='k', linestyle='-', alpha=0., label=' ')
 
 
-    ax.scatter(i_model.x[0], i_model.y[0], color=current_palette[0], label='Low-fidelity data')
-    ax.scatter(i_model.x[1], i_model.y[1], color=current_palette[1], label='Mid-fidelity data')
-    ax.scatter(i_model.x[2], i_model.y[2], color=current_palette[2], label='High-fidelity data')
+    ax.scatter(i_model.x_original[0], i_model.y[0], color=current_palette[0], label='Low-fidelity data', edgecolors='k', zorder=101)
+    ax.scatter(i_model.x_original[1], i_model.y[1], color=current_palette[1], label='Mid-fidelity data', edgecolors='k', zorder=101)
+    ax.scatter(i_model.x_original[2], i_model.y[2], color=current_palette[2], label='High-fidelity data', edgecolors='k', zorder=101)
 
     ax.plot(test_x, ground_truth, color='k', linestyle='-', zorder=100, alpha=0.7, label='Ground truth')
 

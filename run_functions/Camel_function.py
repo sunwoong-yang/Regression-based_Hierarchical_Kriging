@@ -27,7 +27,8 @@ ground_truth = HF_function(test_x)
 # print(np.min(ground_truth), np.max(ground_truth), np.max(ground_truth) - np.min(ground_truth))
 IHKs, RHKs, i_errors, r_errors, IHK_likeli, RHK_likeli, IHK_time, RHK_time = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
                                               test_x=test_x, test_y=ground_truth,
-                                              history=True, repetition=15, add_noise=[[0, 0.2, 0.03], [1, 0.1, 0.015]], rand_seed=42)
+                                              # history=True, repetition=15, add_noise=[[0, 0.0, 0.0], [1, 0.0, 0.0]], rand_seed=42)
+                                              history=True, repetition=15, add_noise=[[0, 0.02, 0.04], [1, 0.02/2, 0.04/2]], rand_seed=42)
 
 print("IHK likelihood: ", np.mean(IHK_likeli, axis=0))
 print("IHK error: ", np.mean(i_errors, axis=0))
@@ -48,4 +49,5 @@ i_pred = IHKs[0].predict(test_x, return_std=False)
 r_pred = RHKs[0].predict(test_x, return_std=False)
 
 plot_scatter(ground_truth, i_pred, r_pred, title="Camel function")
+
 plot_camel(IHKs[0], RHKs[0], HF_function)

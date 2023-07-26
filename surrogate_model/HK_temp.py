@@ -87,26 +87,22 @@ class HK:
 		if self.current_level == 0:
 			F = np.ones(self.N_pts)
 		else:  # if current_level != 0 --> F = estimate으로넣기
-			F = self.predict(self.x[self.current_level], self.current_level - 1, scaling=False)[0]
+			F = self.predict(self.x[self.current_level], self.current_level - 1)[0]
 
 		self.total_F.append(F)
 
 	###################################
-	def predict(self, X, pred_fidelity=None, surro_dir=None, return_std=True, scaling=False):
+	def predict(self, X, pred_fidelity=None, surro_dir=None, return_std=True):
 
 		if pred_fidelity is None:
 			pred_fidelity = self.total_level - 1
 
 		# Scale input "X" before the prediction
-		# Temp__X = X # 임시수정
-		if scaling:
-			scaled_X = normalize_multifidelity(X, Scaler=self.x_scaler)
-			# scaled_X = normalize_multifidelity(X, Scaler=self.x_scaler[pred_fidelity])
-		else:
-			scaled_X = X
+		Temp__X = X # 임시수정
+		X = normalize_multifidelity(X, Scaler=self.x_scaler[0])
 
-		# if surro_dir is not None:  # $%^&
-		# 	self.total_opt_theta = surro_dir  # $%^&
+		if surro_dir is not None:  # $%^&
+			self.total_opt_theta = surro_dir  # $%^&
 
 		N_pts_test = self.x[pred_fidelity].shape[0]
 		R = self.total_R[pred_fidelity]
@@ -118,7 +114,7 @@ class HK:
 			temp_X = self.total_opt_theta[pred_fidelity]
 			temp_X = np.append(temp_X, self.total_opt_nugget[pred_fidelity])
 
-		r_vector = cal_r_vector(self.x[pred_fidelity], scaled_X, temp_X, self.HKtype)
+		r_vector = cal_r_vector(self.x[pred_fidelity], X, temp_X, self.HKtype)
 		F = self.total_F[pred_fidelity]  #### self.total_F >>> total_F
 		beta = self.total_beta[pred_fidelity]
 		sigmaSQ = self.total_sigmaSQ[pred_fidelity]
@@ -151,9 +147,9 @@ class HK:
 					MSE.append((sigmaSQ * (1 - temp_2 + (temp_3 - y_lf[i]) * (temp_1) * (temp_3 - y_lf[i]))))
 
 		if self.HKtype == "r" or self.HKtype == "R":
-			# nugget 그냥 빼버리면 inv 계산에서 또 수치에러 발생. 이를 완화위해 trick으로 10**-12 fixed nugget 사용
+			# nugget 그냥 빼버리면 inv 계산에서 또 수치에러 발생. 이를 완화위해 trick으로 10**-9 fixed nugget 사용
 			regression_invR = np.linalg.inv(
-				R - self.total_opt_nugget[pred_fidelity] * np.identity(N_pts_test) + 10 ** -12 * np.identity(N_pts_test))
+				R - self.total_opt_nugget[pred_fidelity] * np.identity(N_pts_test) + 10 ** -9 * np.identity(N_pts_test))
 			regression_sigmaSQ = cal_regression_sigmaSQ(N_pts_test, self.y[pred_fidelity], F, beta, R, invR,
 			                                            self.total_opt_nugget[pred_fidelity])
 
@@ -264,45 +260,45 @@ class HK:
 	# 	print(f"R_sq: {r_squared:.4f}")
 
 	###################################
-	# def pred_arbit_theta(self, x_test, current_level, theta, nugget):
-	#
-	# 	N_pts = self.x[current_level].shape[0]
-	# 	R = cal_R(self.x[current_level], theta[current_level], nugget)
-	# 	print("cond", current_level, np.linalg.cond(R))
-	# 	invR = np.linalg.inv(R)
-	# 	r_vector = cal_r_vector(x_test, self.x[current_level], theta[current_level])
-	# 	F = self.total_F[current_level]
-	# 	transF = F.transpose()
-	# 	beta = cal_beta(self.y[current_level], F, invR, transF)
-	# 	sigmaSQ = cal_sigmaSQ(N_pts, self.y[current_level], F, beta, invR)
-	# 	MLE = cal_MLE(N_pts, sigmaSQ, R)
-	#
-	# 	if current_level == 0:
-	#
-	# 		y = beta + r_vector.transpose() @ invR @ (self.y[current_level] - F * beta)
-	# 		MSE = []
-	#
-	# 		for i in range(x_test.shape[0]):
-	# 			MSE.append(sigmaSQ * (1 - r_vector.transpose()[i] @ invR @ r_vector[:, i] + (
-	# 					1 - F.transpose() @ invR @ r_vector[:, i]) ** 2 / (F.transpose() @ invR @ F)))
-	#
-	# 		MSE = np.array(MSE)
-	# 		MSE[MSE < 0] = 0
-	# 		return y, np.sqrt((MSE)), MLE
-	#
-	# 	else:
-	# 		y_lf = pred_arbit_theta(x_test, current_level - 1, theta, nugget)[0]
-	# 		y = beta * y_lf + r_vector.transpose() @ invR @ (self.y[current_level] - F * beta)
-	# 		temp_1 = 1 / (F.transpose() @ invR @ F)
-	# 		MSE = []
-	# 		for i in range(x_test.shape[0]):
-	# 			temp_2 = r_vector.transpose()[i] @ invR @ r_vector[:, i]
-	# 			temp_3 = r_vector.transpose()[i] @ invR @ F
-	# 			MSE.append((sigmaSQ * (1 - temp_2 + (temp_3 - y_lf[i]) * (temp_1) * (temp_3 - y_lf[i]))))
-	#
-	# 		MSE = np.array(MSE)
-	# 		MSE[MSE < 0] = 0
-	# 		return y, np.sqrt((MSE)), MLE
+	def pred_arbit_theta(self, x_test, current_level, theta, nugget):
+
+		N_pts = self.x[current_level].shape[0]
+		R = cal_R(self.x[current_level], theta[current_level], nugget)
+		print("cond", current_level, np.linalg.cond(R))
+		invR = np.linalg.inv(R)
+		r_vector = cal_r_vector(x_test, self.x[current_level], theta[current_level])
+		F = self.total_F[current_level]
+		transF = F.transpose()
+		beta = cal_beta(self.y[current_level], F, invR, transF)
+		sigmaSQ = cal_sigmaSQ(N_pts, self.y[current_level], F, beta, invR)
+		MLE = cal_MLE(N_pts, sigmaSQ, R)
+
+		if current_level == 0:
+
+			y = beta + r_vector.transpose() @ invR @ (self.y[current_level] - F * beta)
+			MSE = []
+
+			for i in range(x_test.shape[0]):
+				MSE.append(sigmaSQ * (1 - r_vector.transpose()[i] @ invR @ r_vector[:, i] + (
+						1 - F.transpose() @ invR @ r_vector[:, i]) ** 2 / (F.transpose() @ invR @ F)))
+
+			MSE = np.array(MSE)
+			MSE[MSE < 0] = 0
+			return y, np.sqrt((MSE)), MLE
+
+		else:
+			y_lf = pred_arbit_theta(x_test, current_level - 1, theta, nugget)[0]
+			y = beta * y_lf + r_vector.transpose() @ invR @ (self.y[current_level] - F * beta)
+			temp_1 = 1 / (F.transpose() @ invR @ F)
+			MSE = []
+			for i in range(x_test.shape[0]):
+				temp_2 = r_vector.transpose()[i] @ invR @ r_vector[:, i]
+				temp_3 = r_vector.transpose()[i] @ invR @ F
+				MSE.append((sigmaSQ * (1 - temp_2 + (temp_3 - y_lf[i]) * (temp_1) * (temp_3 - y_lf[i]))))
+
+			MSE = np.array(MSE)
+			MSE[MSE < 0] = 0
+			return y, np.sqrt((MSE)), MLE
 
 	###################################
 	def GA_krig(self, current_level, rand_seed=None):
@@ -631,7 +627,6 @@ class HK:
 		return EI
 
 	def cal_error(self, x, y_real, level=None):
-		# x = normalize_multifidelity(x, Scaler=self.x_scaler)
 		if level is None:
 			level = self.total_level - 1
 		rmse = self.RMSE(x, y_real, level)

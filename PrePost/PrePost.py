@@ -68,22 +68,50 @@ def csv2Num(N_inp, dir="DOEset1.csv", mini_batch = None):
     H_inp, H_out, inp_dataset, out_dataset =  read_csv(N_inp, dir)
     return H_inp, H_out, inp_dataset, out_dataset
 
+#기존 함수
+# def normalize_multifidelity(data, minmax = True, Scaler=None): # for multi-fidelity data
+#
+#     if Scaler is not None:  # When "Scaler" is given, transform "data" using it
+#         scaled_data = Scaler.transform(data)
+#         return scaled_data
+#
+#     else: # When "Scaler" is not given, define new Scaler
+#         scaled_data_list, Scaler_list = [], []
+#         for x in data:  # for loop since "data" is the list of the multi-fidelity data
+#             if minmax:  # When "Scaler" is not given, define new Scaler (MinMaxScaler in this case)
+#                 Scaler = MinMaxScaler()
+#                 scaled_data = Scaler.fit_transform(x)
+#             else:  # When "Scaler" is not given, define new Scaler (StandardScaler in this case)
+#                 Scaler = StandardScaler()
+#                 scaled_data = Scaler.fit_transform(x)
+#             scaled_data_list.append(scaled_data)
+#             Scaler_list.append(Scaler)
+#
+#         return scaled_data_list, Scaler_list, data
+
+#테스트 중인 함수
 def normalize_multifidelity(data, minmax = True, Scaler=None): # for multi-fidelity data
 
     if Scaler is not None:  # When "Scaler" is given, transform "data" using it
         scaled_data = Scaler.transform(data)
+        scaled_data = data # scaling안하기
         return scaled_data
 
     else: # When "Scaler" is not given, define new Scaler
         scaled_data_list, Scaler_list = [], []
-        for x in data: # for loop since "data" is the list of the multi-fidelity data
-            if minmax: # When "Scaler" is not given, define new Scaler (MinMaxScaler in this case)
-                Scaler = MinMaxScaler()
-                scaled_data = Scaler.fit_transform(x)
-            else: # When "Scaler" is not given, define new Scaler (StandardScaler in this case)
-                Scaler = StandardScaler()
-                scaled_data = Scaler.fit_transform(x)
-            scaled_data_list.append(scaled_data)
-            Scaler_list.append(Scaler)
 
-        return scaled_data_list, Scaler_list, data
+        for fidelity, x in enumerate(data): # for loop since "data" is the list of the multi-fidelity data
+            if fidelity == 0:
+                if minmax: # When "Scaler" is not given, define new Scaler (MinMaxScaler in this case)
+                    Scaler = MinMaxScaler()
+
+                else: # When "Scaler" is not given, define new Scaler (StandardScaler in this case)
+                    Scaler = StandardScaler()
+
+                scaled_data = Scaler.fit_transform(x)
+            else:
+                scaled_data = Scaler.transform(x)
+            scaled_data = x # scaling안하기
+            scaled_data_list.append(scaled_data)
+
+        return scaled_data_list, Scaler, data

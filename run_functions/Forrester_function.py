@@ -9,7 +9,7 @@ function_name = "Forrester"
 # LF_x = lhs(in_dim, samples=80, criterion='maximin')
 # MF_x = lhs(in_dim, samples=40, criterion='maximin')
 # HF_x = lhs(in_dim, samples=20, criterion='maximin')
-LF_x = np.linspace(0, 1, 21).reshape(-1,1)
+LF_x = np.linspace(0, 1, 16).reshape(-1,1) # 원래 21
 MF_x = np.linspace(0, 1, 8).reshape(-1,1)
 HF_x = np.array([0, 0.4, 0.6, 1]).reshape(-1,1)
 
@@ -23,7 +23,7 @@ ground_truth = HF_function(test_x)
 
 IHKs, RHKs, i_errors, r_errors, IHK_likeli, RHK_likeli, IHK_time, RHK_time = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
                                               test_x=test_x, test_y=ground_truth,
-                                              history=False, repetition=15, add_noise=[[0, 0.2, 0.22], [1, 0.1, 0.11]], rand_seed=42)
+                                              history=False, repetition=15, add_noise=[[0, 0.01, 0.22], [1, 0.01/2, 0.22/2]], rand_seed=42)
 
 print("IHK likelihood: ", np.mean(IHK_likeli, axis=0))
 print("IHK error: ", np.mean(i_errors, axis=0))
@@ -40,13 +40,17 @@ np.save(f"../results_functions/error/RHK_{function_name}.npy", r_errors)
 np.save(f"../results_functions/time/IHK_{function_name}.npy", IHK_time)
 np.save(f"../results_functions/time/RHK_{function_name}.npy", RHK_time)
 
-i_pred = IHKs[0].predict(test_x, return_std=False)
-r_pred = RHKs[0].predict(test_x, return_std=False)
+# i_pred = IHKs[0].predict(test_x, return_std=False)
+# r_pred = RHKs[0].predict(test_x, return_std=False)
+#
+# plot_scatter(ground_truth, i_pred, r_pred, title="Forrester function")
 
-plot_scatter(ground_truth, i_pred, r_pred, title="Forrester function")
-ax = plot_Forrester(test_x, ground_truth, IHKs[4], RHKs[4])
+# for idx in range(15):
+#     ax = plot_Forrester(test_x, ground_truth, IHKs[idx], RHKs[idx])
+#     ax.set_title(idx)
+#     plt.show()
+ax = plot_Forrester(test_x, ground_truth, IHKs[9], RHKs[9])
 ax.figure.savefig("../results_functions/Forrester_pedagogical.png")
-
 
 #########################################################################################################
 

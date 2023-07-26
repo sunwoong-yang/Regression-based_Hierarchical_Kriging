@@ -1,5 +1,6 @@
 import numpy as np
-
+import scipy
+import math
 
 class HKVariable:
     def __init__(self):
@@ -26,21 +27,39 @@ class HKVariable:
 
         return
 
-def cal_r(x1, x2, X, HKtype):
-    if HKtype == ("i" or "I"):
+# def cal_r(x1, x2, X, HKtype): # cubic spline
+#     if HKtype == "i" or HKtype == "I":
+#         theta = X
+#
+#     elif HKtype == "r" or HKtype == "R":
+#         theta = X[:-1]
+#
+#     eps = theta * np.abs(x1 - x2)
+#     for enu, temp in enumerate(eps):
+#         eps[eps <= 0.2] = 1 - 15 * eps[eps <= 0.2] ** 2 + 30 * eps[eps <= 0.2] ** 3
+#         eps[0.2 < eps < 1] = 1.25 * (1 - eps[eps <= 0.2]) ** 3
+#         eps[epse >= 1] = 0
+#         if temp <= 0.2:
+#             eps[enu] = 1 - 15 * temp ** 2 + 30 * temp ** 3
+#         elif 0.2 < temp < 1:
+#             eps[enu] = 1.25 * (1 - temp) ** 3
+#         else:
+#             eps[enu] = 0
+#
+#     return np.prod(eps)
+
+def cal_r(x1, x2, X, HKtype): # Matern (nu=1.5)
+
+    if HKtype == "i" or HKtype == "I":
         theta = X
 
-    elif HKtype == ("r" or "R"):
+    elif HKtype == "r" or HKtype == "R":
         theta = X[:-1]
 
+    # https: // scikit - learn.org / stable / modules / gaussian_process.html  # gp-kernels
+    # d(x_i, x_j) / l : this term is expressed as eps in this code
     eps = theta * np.abs(x1 - x2)
-    for enu, temp in enumerate(eps):
-        if temp <= 0.2:
-            eps[enu] = 1 - 15 * temp ** 2 + 30 * temp ** 3
-        elif 0.2 < temp < 1:
-            eps[enu] = 1.25 * (1 - temp) ** 3
-        else:
-            eps[enu] = 0
+    eps = (1 + np.sqrt(3) * eps) * np.exp(-np.sqrt(3) * eps)
 
     return np.prod(eps)
 
@@ -61,10 +80,11 @@ def cal_R(x, y, X, HKtype):  # x : (N_pts,N_dv)의 shape을 가지는 dv값 arra
         for j in range(i + 1, N_pts):
             R[i, j] = cal_r(x[i], x[j], X, HKtype)
 
-    if HKtype == ("i" or "I"):
+    if HKtype == "i" or HKtype == "I":
         nugget = 10 ** -12
-    elif HKtype == ("r" or "R"):
+    elif HKtype == "r" or HKtype == "R":
         nugget = X[-1]
+        # nugget = 10 ** -12
 
     return R + R.transpose() + (1 + nugget) * np.identity(N_pts)
 

@@ -115,6 +115,7 @@ fig.legend([p1["boxes"][0], p2["boxes"][0]], ["IHK", "RHK"], fontsize=18, loc="u
            bbox_to_anchor=(0.5, 1.02), frameon=False, ncol=2, )
 plt.tight_layout()
 fig.subplots_adjust(top=0.88)
+fig.savefig("../results_functions/error_boxplot.png")
 plt.show()
 
 # fig, ax = plt.subplots(dpi=300)
