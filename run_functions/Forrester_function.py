@@ -21,7 +21,7 @@ test_x = np.linspace(0, 1, 300).reshape(-1, 1)
 ground_truth = HF_function(test_x)
 
 
-IHKs, RHKs, i_errors, r_errors, IHK_likeli, RHK_likeli, IHK_time, RHK_time = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
+IHKs, RHKs, i_errors, r_errors, IHK_likeli, RHK_likeli, IHK_time, RHK_time, x_scaler = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
                                               test_x=test_x, test_y=ground_truth,
                                               history=False, repetition=15, add_noise=[[0, 0.01, 0.22], [1, 0.01/2, 0.22/2]], rand_seed=42)
 
@@ -49,6 +49,8 @@ np.save(f"../results_functions/time/RHK_{function_name}.npy", RHK_time)
 #     ax = plot_Forrester(test_x, ground_truth, IHKs[idx], RHKs[idx])
 #     ax.set_title(idx)
 #     plt.show()
+
+test_x = x_scaler.transform(test_x)
 ax = plot_Forrester(test_x, ground_truth, IHKs[9], RHKs[9])
 ax.figure.savefig("../results_functions/Forrester_pedagogical.png")
 

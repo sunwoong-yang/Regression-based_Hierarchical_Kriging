@@ -2,8 +2,22 @@ from surrogate_model.HK import HK
 import numpy as np
 import copy
 import time
+from sklearn.preprocessing import MinMaxScaler
 
 def train_models(X, Y, add_noise=None, pop=30, gen=100, repetition=1, history=False, print_time=True, rand_seed=42, test_x=None, test_y=None):
+
+	x_scaler_list, x_scaled = [], []
+	for level, x in enumerate(X):
+		if level == 0:
+			x_scaler = MinMaxScaler()
+			x = x_scaler.fit_transform(x)
+		else:
+		# x_scaler_list.append(x_scaler)
+			x = x_scaler.transform(x)
+		x_scaled.append(x)
+	X = x_scaled
+
+	test_x = x_scaler.transform(test_x)
 
 	if add_noise is None:
 		add_noise = [[0, 0.2, 0.2], [1, 0.1, 0.1]] # Default noise: add std=0.2 Gaussian noise to the lowest fidelity output & std=0.1 to the mid fidelity output
@@ -50,4 +64,4 @@ def train_models(X, Y, add_noise=None, pop=30, gen=100, repetition=1, history=Fa
 		print(f"{repeat + 1}th IHK time: {IHK_time_ / 60:.3f} m & error: {i_errors[repeat]}")
 		print(f"{repeat + 1}th RHK time: {RHK_time_ / 60:.3f} m & error: {r_errors[repeat]}")
 		print(IHK.total_MLE, RHK.total_MLE)
-	return IHKs, RHKs, i_errors, r_errors, IHK_likeli, RHK_likeli, np.array(IHK_time), np.array(RHK_time)
+	return IHKs, RHKs, i_errors, r_errors, IHK_likeli, RHK_likeli, np.array(IHK_time), np.array(RHK_time), x_scaler

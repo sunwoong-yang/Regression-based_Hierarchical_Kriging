@@ -25,7 +25,7 @@ HF_y = HF_function(HF_x).reshape(-1, 1)
 test_x = scaling_x(lhs(in_dim, samples=300, criterion='maximin'))
 ground_truth = HF_function(test_x)
 
-IHKs, RHKs, i_errors, r_errors, IHK_likeli, RHK_likeli, IHK_time, RHK_time = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
+IHKs, RHKs, i_errors, r_errors, IHK_likeli, RHK_likeli, IHK_time, RHK_time, x_scaler = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
                                               test_x=test_x, test_y=ground_truth,
                                               history=True, repetition=15, add_noise=[[0, 0.01, 2.25], [1, 0.01/5, 2.25/2]], rand_seed=42)
 
@@ -44,10 +44,11 @@ np.save(f"../results_functions/error/RHK_{function_name}.npy", r_errors)
 np.save(f"../results_functions/time/IHK_{function_name}.npy", IHK_time)
 np.save(f"../results_functions/time/RHK_{function_name}.npy", RHK_time)
 
+test_x = x_scaler.transform(test_x)
 i_pred = IHKs[0].predict(test_x, return_std=False)
 r_pred = RHKs[0].predict(test_x, return_std=False)
 
-plot_scatter(ground_truth, i_pred, r_pred, title="Forrester function")
+plot_scatter(ground_truth, i_pred, r_pred, title="Branin function")
 plot_Branin(IHKs[0], RHKs[0], HF_function)
 
 
