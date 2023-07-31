@@ -24,6 +24,7 @@ ground_truth = HF_function(test_x)
 IHKs, RHKs, i_errors, r_errors, IHK_likeli, RHK_likeli, IHK_time, RHK_time, x_scaler = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
                                               test_x=test_x, test_y=ground_truth,
                                               history=False, repetition=15, add_noise=[[0, 0.01, 0.22], [1, 0.01/2, 0.22/2]], rand_seed=42)
+                                              # history=False, repetition=1, add_noise=[[0, 0., 0.], [1, 0., 0.]], rand_seed=42)
 
 print("IHK likelihood: ", np.mean(IHK_likeli, axis=0))
 print("IHK error: ", np.mean(i_errors, axis=0))
@@ -40,6 +41,33 @@ np.save(f"../results_functions/error/RHK_{function_name}.npy", r_errors)
 np.save(f"../results_functions/time/IHK_{function_name}.npy", IHK_time)
 np.save(f"../results_functions/time/RHK_{function_name}.npy", RHK_time)
 
+test_x = x_scaler.transform(test_x)
+ax = plot_Forrester(test_x, ground_truth, IHKs[9], RHKs[9])
+ax.figure.savefig("../results_functions/Forrester_pedagogical.png")
+
+print("********  Without noise  ********")
+IHKs, RHKs, i_errors, r_errors, IHK_likeli, RHK_likeli, IHK_time, RHK_time, x_scaler = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
+                                              test_x=test_x, test_y=ground_truth,
+                                              history=False, repetition=1, add_noise=[[0, 0., 0.], [1, 0., 0.]], rand_seed=42)
+
+print("IHK likelihood: ", np.mean(IHK_likeli, axis=0))
+print("IHK error: ", np.mean(i_errors, axis=0))
+print("IHK time: ", np.sum(IHK_time))
+print("********************")
+print("RHK likelihood: ", np.mean(RHK_likeli, axis=0))
+print("RHK error: ", np.mean(r_errors, axis=0))
+print("RHK time: ", np.sum(RHK_time))
+
+np.save(f"../results_functions/likeli/IHK_{function_name}_wo_noise.npy", IHK_likeli)
+np.save(f"../results_functions/likeli/RHK_{function_name}_wo_noise.npy", RHK_likeli)
+np.save(f"../results_functions/error/IHK_{function_name}_wo_noise.npy", i_errors)
+np.save(f"../results_functions/error/RHK_{function_name}_wo_noise.npy", r_errors)
+np.save(f"../results_functions/time/IHK_{function_name}_wo_noise.npy", IHK_time)
+np.save(f"../results_functions/time/RHK_{function_name}_wo_noise.npy", RHK_time)
+
+
+#########################################################################################################
+
 # i_pred = IHKs[0].predict(test_x, return_std=False)
 # r_pred = RHKs[0].predict(test_x, return_std=False)
 #
@@ -50,11 +78,6 @@ np.save(f"../results_functions/time/RHK_{function_name}.npy", RHK_time)
 #     ax.set_title(idx)
 #     plt.show()
 
-test_x = x_scaler.transform(test_x)
-ax = plot_Forrester(test_x, ground_truth, IHKs[9], RHKs[9])
-ax.figure.savefig("../results_functions/Forrester_pedagogical.png")
-
-#########################################################################################################
 
 # IHK, RHK = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y], history=True)
 # # IHK_2level, RHK_2level = train_models([LF_x, HF_x], [LF_y, HF_y])

@@ -39,18 +39,18 @@ LF_x = entire_x[LF_rand_idx]
 MF_x = entire_x[MF_rand_idx]
 HF_x = entire_x[HF_rand_idx]
 
-LF_y = entire_LF_y[LF_rand_idx]
-MF_y = entire_MF_y[MF_rand_idx]
-HF_y = entire_HF_y[HF_rand_idx]
+LF_y = entire_LF_y[LF_rand_idx].reshape(-1,1)
+MF_y = entire_MF_y[MF_rand_idx].reshape(-1,1)
+HF_y = entire_HF_y[HF_rand_idx].reshape(-1,1)
 
-IHKs, RHKs, i_errors, r_errors, IHK_likeli, RHK_likeli, IHK_time, RHK_time = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
+IHKs, RHKs, i_errors, r_errors, IHK_likeli, RHK_likeli, IHK_time, RHK_time, x_scaler = train_models([LF_x, MF_x, HF_x], [LF_y, MF_y, HF_y],
                                               test_x=entire_x, test_y=entire_HF_y,
-                                              history=True, repetition=15, add_noise=[], rand_seed=42)
+                                              history=True, repetition=15, add_noise=[[0, 0., 0.], [1, 0., 0.]], rand_seed=42)
 
 
 
 
-plot_2d_RAE(IHKs[0], RHKs[0], entire_x, aoa_data, qoi_data, index_qoi)
+plot_2d_RAE(IHKs[0], RHKs[0], entire_x, aoa_data, qoi_data, index_qoi, x_scaler)
 
 print("IHK likelihood: ", np.mean(IHK_likeli, axis=0))
 print("IHK error: ", np.mean(i_errors, axis=0))

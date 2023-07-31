@@ -1,13 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-def plot_2d_RAE(i_model, r_model, entire_x, aoa_data, qoi_data, index_qoi):
+def plot_2d_RAE(i_model, r_model, entire_x, aoa_data, qoi_data, index_qoi, x_scaler):
 	# test_x = x
 	# xx = test_x[:,0]
     # lin_pts=51
     xx, yy = entire_x[:,0].reshape(9,-1), entire_x[:,1].reshape(9,-1)
     # xx, yy = np.meshgrid(x1, x2)
     test_x = np.hstack((xx.reshape(-1,1), yy.reshape(-1,1)))
+    test_x = x_scaler.transform(test_x)
     i_pred = i_model.predict(test_x, pred_fidelity=2, return_std=False)
     r_pred = r_model.predict(test_x, pred_fidelity=2, return_std=False)
     i_pred, r_pred = i_pred.reshape(-1, aoa_data.shape[0]), r_pred.reshape(-1, aoa_data.shape[0])

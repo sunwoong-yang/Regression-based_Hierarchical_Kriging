@@ -402,7 +402,7 @@ class HK:
 					                 n_obj=1,
 					                 n_constr=0,
 					                 xl=np.array([-6.] * n_var + [-12.]),  # cubit spline --> 변수개수 + nugget
-					                 xu=np.array([3.] * n_var + [-3.]), # default -3. for nugget
+					                 xu=np.array([3.] * n_var + [-2.]), # default -3. for nugget
 
 					                 )
 

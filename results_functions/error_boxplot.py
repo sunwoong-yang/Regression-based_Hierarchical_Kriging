@@ -9,12 +9,6 @@ IHK_Branin = np.load("../results_functions/error/IHK_Branin.npy", )
 RHK_Branin = np.load("../results_functions/error/RHK_Branin.npy", )
 IHK_Camel = np.load("../results_functions/error/IHK_Camel.npy", )
 RHK_Camel = np.load("../results_functions/error/RHK_Camel.npy", )
-# IHK_Func1 = np.load("../results_functions/error/IHK_Func1.npy", )
-# RHK_Func1 = np.load("../results_functions/error/RHK_Func1.npy", )
-# IHK_Func2 = np.load("../results_functions/error/IHK_Func2.npy", )
-# RHK_Func2 = np.load("../results_functions/error/RHK_Func2.npy", )
-# IHK_Func3 = np.load("../results_functions/error/IHK_Func3.npy", )
-# RHK_Func3 = np.load("../results_functions/error/RHK_Func3.npy", )
 IHK_Func4 = np.load("../results_functions/error/IHK_Func4.npy", )
 RHK_Func4 = np.load("../results_functions/error/RHK_Func4.npy", )
 IHK_Func5 = np.load("../results_functions/error/IHK_Func5.npy", )
@@ -28,6 +22,21 @@ error_name = np.vstack((error_name, error_name))
 IorR_name = np.array([i for i in ["IHK", "RHK"] for j in range(15 * len(error_set))]).reshape(-1, 1)
 func_name = ["Forrester", "Branin", "Camel", "Func4", "Func5", "Func6"]  # 나중에 func 1,2,3,4로 당기기 (기존 func1,2을 안쓰게됨)
 
+IHK_Forrester_wo = np.load("../results_functions/error/IHK_Forrester_wo_noise.npy", ).reshape(1,-1)
+RHK_Forrester_wo = np.load("../results_functions/error/RHK_Forrester_wo_noise.npy", ).reshape(1,-1)
+IHK_Branin_wo = np.load("../results_functions/error/IHK_Branin_wo_noise.npy", ).reshape(1,-1)
+RHK_Branin_wo = np.load("../results_functions/error/RHK_Branin_wo_noise.npy", ).reshape(1,-1)
+IHK_Camel_wo = np.load("../results_functions/error/IHK_Camel_wo_noise.npy", ).reshape(1,-1)
+RHK_Camel_wo = np.load("../results_functions/error/RHK_Camel_wo_noise.npy", ).reshape(1,-1)
+IHK_Func4_wo = np.load("../results_functions/error/IHK_Func4_wo_noise.npy", ).reshape(1,-1)
+RHK_Func4_wo = np.load("../results_functions/error/RHK_Func4_wo_noise.npy", ).reshape(1,-1)
+IHK_Func5_wo = np.load("../results_functions/error/IHK_Func5_wo_noise.npy", ).reshape(1,-1)
+RHK_Func5_wo = np.load("../results_functions/error/RHK_Func5_wo_noise.npy", ).reshape(1,-1)
+IHK_Func6_wo = np.load("../results_functions/error/IHK_Func6_wo_noise.npy", ).reshape(1,-1)
+RHK_Func6_wo = np.load("../results_functions/error/RHK_Func6_wo_noise.npy", ).reshape(1,-1)
+
+IHK_wo_noise = np.concatenate((IHK_Forrester_wo[0:2],IHK_Branin_wo[0:2],IHK_Camel_wo[0:2],IHK_Func4_wo[:2],IHK_Func5_wo[:2],IHK_Func6_wo[:2]), axis=0) #shape 6,2 (first col: IHK, second col: RHK)
+RHK_wo_noise = np.concatenate((RHK_Forrester_wo[0:2],RHK_Branin_wo[0:2],RHK_Camel_wo[0:2],RHK_Func4_wo[:2],RHK_Func5_wo[:2],RHK_Func6_wo[:2]), axis=0)
 
 def make_df_per_func(IHK_results, RHK_results):
 	IHK_err = np.vstack((IHK_results[:, [0]], IHK_results[:, [1]]))
@@ -55,23 +64,14 @@ df_set = [df_Forrester, df_Branin, df_Camel, df_Func4, df_Func5, df_Func6]
 # https://coding-kindergarten.tistory.com/134
 # https://gmnam.tistory.com/252
 fig = plt.figure(figsize=(8.5, 6), dpi=350)
-# ax2_ylim = [
-# 	[1000, 1600],  # Forrester
-# 	# [3, 7],
-# 	# [765, 770],
-# 	[220, 230],
-# 	[110, 130],
-# 	[80, 160],
-# 	[80, 160],
-# 	[80, 160]
-# ]
+
 current_palette = sns.color_palette("Set2")
 box_setting_IHK = dict(boxprops=dict(facecolor=current_palette[0]), patch_artist=True, medianprops=dict(color='k'),
-                       showfliers=False)
-					 # showfliers=True)
+                       # showfliers=False)
+					 showfliers=True, flierprops={"markeredgecolor": 'k', "markerfacecolor":current_palette[0]})
 box_setting_RHK = dict(boxprops=dict(facecolor=current_palette[1]), patch_artist=True, medianprops=dict(color='k'),
-                       showfliers=False)
-					# showfliers=True)
+                       # showfliers=False)
+					showfliers=True, flierprops={"markeredgecolor": 'k', "markerfacecolor":current_palette[1]})
 for idx, df_ in enumerate(df_set):
 	ax1 = fig.add_subplot(2, 3, idx + 1)
 	# ax1.set_aspect('equal')
@@ -80,12 +80,20 @@ for idx, df_ in enumerate(df_set):
 	                 **box_setting_IHK)
 	p2 = ax1.boxplot(temp[temp["Type"] == "RHK"]["Error"].values, positions=[+0.2],
 	                 **box_setting_RHK)
+
+	p3 = ax1.scatter(-0.2, IHK_wo_noise[idx,0], color='k', s=40, marker='x',linewidths=2.5, zorder=99)
+	ax1.scatter(0.2, RHK_wo_noise[idx,0], color='k', s=40, marker='x', linewidths=2.5, zorder=99)
+
 	ax2 = ax1.twinx()
 	temp = df_[df_["Error_name"] == "MAE"]
 	ax2.boxplot(temp[temp["Type"] == "IHK"]["Error"].values, positions=[1 - 0.2],
 	            **box_setting_IHK)
 	ax2.boxplot(temp[temp["Type"] == "RHK"]["Error"].values, positions=[1 + 0.2],
 	            **box_setting_RHK)
+
+	ax2.scatter(1-0.2, IHK_wo_noise[idx,1], color='k', s=40, marker='x', linewidths=2.5, zorder=99)
+	ax2.scatter(1+0.2, RHK_wo_noise[idx,1], color='k', s=40, marker='x', linewidths=2.5, zorder=99)
+
 	# ax3 = ax1.twinx()
 	# temp = df_[df_["Error_name"] == "MAE"]
 	# ax3.boxplot(temp[temp["Type"] == "IHK"]["L"].values, positions=[2 - 0.2],
@@ -110,11 +118,12 @@ for idx, df_ in enumerate(df_set):
 # ax1.set_aspect(1)
 # ax2.set_aspect(1)
 
-
-fig.legend([p1["boxes"][0], p2["boxes"][0]], ["IHK", "RHK"], fontsize=18, loc="upper center",
-           bbox_to_anchor=(0.5, 1.02), frameon=False, ncol=2, )
+fig.legend([p3], ["Without noise"], fontsize=18, loc="upper center",
+           bbox_to_anchor=(0.5, 1.03), frameon=False, ncol=2, handletextpad=0.0)
+fig.legend([p1["boxes"][0], p2["boxes"][0]], ["IHK","RHK"], fontsize=18, loc="upper center",
+           bbox_to_anchor=(0.51, .98), frameon=False, ncol=2, columnspacing=1., handletextpad=0.5)
 plt.tight_layout()
-fig.subplots_adjust(top=0.88)
+fig.subplots_adjust(top=0.85)
 fig.savefig("../results_functions/error_boxplot.png")
 plt.show()
 
